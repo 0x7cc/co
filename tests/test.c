@@ -10,7 +10,7 @@ void coroutine_3 (void* data)
   for (int i = 0; i < 2; i++)
   {
     printf ("coroutine_3 : %d\n", i);
-    co_yield();
+    co_yield ();
   }
 }
 
@@ -20,7 +20,7 @@ void coroutine_1 (void* data)
   {
     printf ("coroutine_1 : i = %d, data = %p\n", i, data);
     co_add (coroutine_3, 0);
-    co_yield();
+    co_yield ();
   }
 }
 
@@ -29,7 +29,7 @@ void coroutine_2 (void* data)
   for (register int i = 0; i < 3; ++i)
   {
     printf ("coroutine_2 : i = %d, data = %p\n", i, data);
-    co_yield();
+    co_yield ();
   }
 }
 

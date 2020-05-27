@@ -51,22 +51,31 @@ section .text
 co_store_context:
   mov r10, argv0
 
-  mov qword [r10 + co_context.rax], rax ;
-  mov qword [r10 + co_context.rbx], rbx ;
-  mov qword [r10 + co_context.rcx], rcx ;
-  mov qword [r10 + co_context.rdx], rdx ;
-  mov qword [r10 + co_context.rsi], rsi ;
-  mov qword [r10 + co_context.rdi], rdi ;
-  mov qword [r10 + co_context.rbp], rbp ;
-  mov qword [r10 + co_context.rsp], rsp ;
-  mov qword [r10 + co_context.r8 ], r8  ;
-  mov qword [r10 + co_context.r9 ], r9  ;
-  mov qword [r10 + co_context.r12], r12 ;
-  mov qword [r10 + co_context.r13], r13 ;
-  mov qword [r10 + co_context.r14], r14 ;
-  mov qword [r10 + co_context.r15], r15 ;
-  mov qword [r10 + co_context.rip], .end ;
-  .end:
+  mov qword [r10 + co_context.rax], rax
+  mov qword [r10 + co_context.rbx], rbx
+  mov qword [r10 + co_context.rcx], rcx
+  mov qword [r10 + co_context.rdx], rdx
+  mov qword [r10 + co_context.rsi], rsi
+  mov qword [r10 + co_context.rdi], rdi
+  mov qword [r10 + co_context.rbp], rbp
+  mov qword [r10 + co_context.r8 ], r8
+  mov qword [r10 + co_context.r9 ], r9
+  ; NOTE: r10和r11寄存器不需要保存和恢复
+  mov qword [r10 + co_context.r12], r12
+  mov qword [r10 + co_context.r13], r13
+  mov qword [r10 + co_context.r14], r14
+  mov qword [r10 + co_context.r15], r15
+
+  ; 把rip指向本函数返回的地址, 这里就需要计算一次函数返回后rsp的位置
+  mov r11, rsp
+  add r11, 8
+  mov qword [r10 + co_context.rsp], r11
+
+  ; 把rip指向本函数返回的地址
+  mov r11, [rsp]
+  mov qword [r10 + co_context.rip], r11
+
+  ; r11寄存器并不需要清理
   ret
 
 co_load_context:
@@ -81,34 +90,44 @@ co_load_context:
   mov rsp , qword [r11 + co_context.rsp]
   mov r8  , qword [r11 + co_context.r8 ]
   mov r9  , qword [r11 + co_context.r9 ]
+  ; NOTE: r10和r11寄存器不需要保存和恢复
   mov r12 , qword [r11 + co_context.r12]
   mov r13 , qword [r11 + co_context.r13]
   mov r14 , qword [r11 + co_context.r14]
   mov r15 , qword [r11 + co_context.r15]
-  jmp [r11 + co_context.rip]
+  jmp qword [r11 + co_context.rip]
 
   ret
 
 co_swap_context:
   mov r10, argv0
+
+  mov qword [r10 + co_context.rax], rax
+  mov qword [r10 + co_context.rbx], rbx
+  mov qword [r10 + co_context.rcx], rcx
+  mov qword [r10 + co_context.rdx], rdx
+  mov qword [r10 + co_context.rsi], rsi
+  mov qword [r10 + co_context.rdi], rdi
+  mov qword [r10 + co_context.rbp], rbp
+  mov qword [r10 + co_context.rsp], rsp
+  mov qword [r10 + co_context.r8 ], r8
+  mov qword [r10 + co_context.r9 ], r9
+  ; NOTE: r10和r11寄存器不需要保存和恢复
+  mov qword [r10 + co_context.r12], r12
+  mov qword [r10 + co_context.r13], r13
+  mov qword [r10 + co_context.r14], r14
+  mov qword [r10 + co_context.r15], r15
+
+  ; 把rip指向本函数返回的地址, 这里就需要计算一次函数返回后rsp的位置
+  mov r11, rsp
+  add r11, 8
+  mov qword [r10 + co_context.rsp], r11
+
+  ; 把rip指向本函数返回的地址
+  mov r11, [rsp]
+  mov qword [r10 + co_context.rip], r11
+
   mov r11, argv1
-
-  mov qword [r10 + co_context.rax], rax ;
-  mov qword [r10 + co_context.rbx], rbx ;
-  mov qword [r10 + co_context.rcx], rcx ;
-  mov qword [r10 + co_context.rdx], rdx ;
-  mov qword [r10 + co_context.rsi], rsi ;
-  mov qword [r10 + co_context.rdi], rdi ;
-  mov qword [r10 + co_context.rbp], rbp ;
-  mov qword [r10 + co_context.rsp], rsp ;
-  mov qword [r10 + co_context.r8 ], r8  ;
-  mov qword [r10 + co_context.r9 ], r9  ;
-  mov qword [r10 + co_context.r12], r12 ;
-  mov qword [r10 + co_context.r13], r13 ;
-  mov qword [r10 + co_context.r14], r14 ;
-  mov qword [r10 + co_context.r15], r15 ;
-  mov qword [r10 + co_context.rip], .end ;
-
   mov rax , qword [r11 + co_context.rax]
   mov rbx , qword [r11 + co_context.rbx]
   mov rcx , qword [r11 + co_context.rcx]
@@ -119,12 +138,12 @@ co_swap_context:
   mov rsp , qword [r11 + co_context.rsp]
   mov r8  , qword [r11 + co_context.r8 ]
   mov r9  , qword [r11 + co_context.r9 ]
+  ; NOTE: r10和r11寄存器不需要保存和恢复
   mov r12 , qword [r11 + co_context.r12]
   mov r13 , qword [r11 + co_context.r13]
   mov r14 , qword [r11 + co_context.r14]
   mov r15 , qword [r11 + co_context.r15]
-  jmp [r11 + co_context.rip]
+  jmp qword [r11 + co_context.rip]
 
-  .end:
   ret
 

@@ -7,7 +7,7 @@
 co_extern co_int co_thread_create (co_func func, void* data)
 {
   pthread_t t;
-  pthread_create (&t, NULL, func, data);
+  pthread_create (&t, NULL, (void* (*)(void*))func, data);
   return t;
 }
 

@@ -108,7 +108,7 @@ co_extern co_int co_wait ();
  * 让出执行权
  * @return
  */
-co_extern co_int co_yield();
+co_extern co_int co_yield ();
 
 /**
  * 创建线程
