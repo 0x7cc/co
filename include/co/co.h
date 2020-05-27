@@ -78,12 +78,14 @@ static_assert (sizeof (co_int64) == 8, "");
 #ifndef NULL
   #define NULL 0
 #endif
+
+#define CO_STACK_SIZE 0x100000ull
 // clang-format on
 
 typedef void (*co_func) (void* data);
 
 /**
- * 在一个线程中启用协程
+ * 在一个线程中启用协程功能
  * @return
  */
 co_extern co_int co_enable ();
@@ -109,7 +111,7 @@ co_extern co_int co_wait ();
 co_extern co_int co_yield();
 
 /**
- *
+ * 创建线程
  * @param func
  * @param data
  * @return thread id
@@ -117,16 +119,30 @@ co_extern co_int co_yield();
 co_extern co_int co_thread_create (co_func func, void* data);
 
 /**
- *
+ * 等待线程
  * @param tid
  * @return
  */
 co_extern co_int co_thread_join (co_int tid);
 
+/**
+ * malloc
+ * @param size
+ * @return
+ */
 co_extern void* co_alloc (co_uint size);
 
+/**
+ * calloc
+ * @param size
+ * @return
+ */
 co_extern void* co_calloc (co_uint size);
 
+/**
+ * free
+ * @param ptr
+ */
 co_extern void co_free (void* ptr);
 
 #endif

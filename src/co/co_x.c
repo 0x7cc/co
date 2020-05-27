@@ -1,7 +1,7 @@
 
 #if __unix
 
-#include "co.h"
+#include "co/co.h"
 #include <pthread.h>
 
 co_extern co_int co_thread_create (co_func func, void* data)

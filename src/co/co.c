@@ -1,5 +1,5 @@
 
-#include "co.h"
+#include "co/co.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -65,13 +65,13 @@ static thread_local co_thread_context_t threadCtx;
 extern co_int co_swap_context (co_task_context_t* store, co_task_context_t* load);
 
 /**
- * 保存上下文, 执行后将会执行协程.(由汇编实现)
+ * 保存上下文.(由汇编实现)
  * @return
  */
 extern co_int co_store_context (co_task_context_t* ctx);
 
 /**
- * 加载上下文, 执行后将会执行协程.(由汇编实现)
+ * 载入上下文, 执行过程中将会切换到其他协程.(由汇编实现)
  * @return
  */
 extern co_int co_load_context (co_task_context_t* ctx);
@@ -93,7 +93,7 @@ co_int co_enable ()
   return 0;
 }
 
-static void co_del ()
+static void co_exited ()
 {
   threadCtx.task_current->status = -1;
   co_load_context (&(threadCtx.task_head->ctx));
@@ -101,17 +101,16 @@ static void co_del ()
 
 co_int co_add (co_func func, void* data)
 {
-  register co_task_t* task       = (co_task_t*)co_calloc (sizeof (co_task_t));
-  register co_task_t* last       = threadCtx.task_last;
-  const size_t        stack_size = 1024 * 2048; // 每个协程给2MiB的栈空间
+  register co_task_t* task = (co_task_t*)co_calloc (sizeof (co_task_t));
+  register co_task_t* last = threadCtx.task_last;
 
   task->prev      = last;
   task->next      = threadCtx.task_head;
-  task->stack     = co_calloc (stack_size);
+  task->stack     = co_calloc (CO_STACK_SIZE);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stack_size - sizeof (co_uintptr);
-  co_task_stack_push (task, (co_int)co_del);
+  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + CO_STACK_SIZE - sizeof (co_uintptr);
+  co_task_stack_push (task, (co_int)co_exited);
 
   threadCtx.task_last = last->next = task;
 
@@ -150,9 +149,7 @@ co_int co_wait ()
 
 co_int co_yield()
 {
-  co_task_t* current = threadCtx.task_current;
-
-  co_swap_context (&(current->ctx), &(threadCtx.task_head->ctx));
+  co_swap_context (&(threadCtx.task_current->ctx), &(threadCtx.task_head->ctx));
   return 0;
 }
 

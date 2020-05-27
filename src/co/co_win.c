@@ -1,7 +1,7 @@
 
 #if WIN32
 
-#include "co.h"
+#include "co/co.h"
 #include <windows.h>
 
 co_extern co_int co_thread_create (co_func func, void* data)

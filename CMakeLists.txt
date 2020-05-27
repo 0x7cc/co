@@ -23,15 +23,15 @@ endif ()
 
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
-  DEPENDS ${PROJECT_SOURCE_DIR}/co.asm
-  COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${PROJECT_SOURCE_DIR}/co.asm
+  DEPENDS src/co/co.asm
+  COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${PROJECT_SOURCE_DIR}/src/co/co.asm
   COMMENT "nasm generate elf64 file"
 )
 
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.obj
-  DEPENDS ${PROJECT_SOURCE_DIR}/co.asm
-  COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${PROJECT_SOURCE_DIR}/co.asm
+  DEPENDS src/co/co.asm
+  COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${PROJECT_SOURCE_DIR}/src/co/co.asm
   COMMENT "nasm generate win64 file"
 )
 
@@ -39,10 +39,10 @@ add_custom_command (
 
 add_library ( co
   STATIC
-  co.c
-  co.h
-  co_win.c
-  co_x.c
+  include/co/co.h
+  src/co/co.c
+  src/co/co_win.c
+  src/co/co_x.c
   ${NASM_OBJ}
   )
 
@@ -54,7 +54,7 @@ target_include_directories ( co
 #####################################
 
 add_executable ( test
-  test.c
+  tests/test.c
   )
 
 target_include_directories ( test
