@@ -29,6 +29,7 @@ typedef struct co_task_s
   struct co_task_s* prev;
   struct co_task_s* next;
   void*             stack;
+  co_int            status;
   co_task_context_t ctx;
 } co_task_t;
 
@@ -94,19 +95,8 @@ co_int co_enable ()
 
 static void co_del ()
 {
-  register co_task_t* task = threadCtx.task_current;
-
-  if (threadCtx.task_last == task)
-    threadCtx.task_last = task->prev;
-
-  threadCtx.task_current = task->next;
-  task->prev->next       = task->next;
-  task->next->prev       = task->prev;
-
-  co_free (task->stack);
-  co_free (task);
-
-  co_load_context (&(threadCtx.task_current->ctx));
+  threadCtx.task_current->status = -1;
+  co_load_context (&(threadCtx.task_head->ctx));
 }
 
 co_int co_add (co_func func, void* data)
@@ -120,7 +110,7 @@ co_int co_add (co_func func, void* data)
   task->stack     = co_calloc (stack_size);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stack_size;
+  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stack_size - sizeof (co_uintptr);
   co_task_stack_push (task, (co_int)co_del);
 
   threadCtx.task_last = last->next = task;
@@ -130,15 +120,30 @@ co_int co_add (co_func func, void* data)
 
 co_int co_wait ()
 {
-  register co_task_t* task;
+  register co_task_t* task = threadCtx.task_head->next;
 
-  co_store_context (&(threadCtx.task_head->ctx));
+  while (threadCtx.task_last != threadCtx.task_head)
+  {
+    threadCtx.task_current = task;
+    co_swap_context (&(threadCtx.task_head->ctx), &(task->ctx));
 
-  if (threadCtx.task_head->next == threadCtx.task_head)
-    return 0;
+    register co_task_t* next = task->next;
+    if (next == threadCtx.task_head)
+      next = next->next;
 
-  task = threadCtx.task_current = threadCtx.task_head->next;
-  co_load_context (&(threadCtx.task_head->next->ctx));
+    if (task->status == -1)
+    {
+      if (task == threadCtx.task_last)
+        threadCtx.task_last = task->prev;
+
+      task->prev->next = task->next;
+      task->next->prev = task->prev;
+      co_free (task->stack);
+      co_free (task);
+    }
+
+    task = next;
+  }
 
   return 0;
 }
@@ -146,15 +151,8 @@ co_int co_wait ()
 co_int co_yield()
 {
   co_task_t* current = threadCtx.task_current;
-  co_task_t* next    = current->next;
-  if (next == threadCtx.task_head)
-    next = next->next;
 
-  if (next == current)
-    return 0; // 只有当前协程了,没必要切换.
-
-  threadCtx.task_current = next;
-  co_swap_context (&(current->ctx), &(next->ctx));
+  co_swap_context (&(current->ctx), &(threadCtx.task_head->ctx));
   return 0;
 }
 
