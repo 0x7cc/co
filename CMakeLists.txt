@@ -16,9 +16,9 @@ set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ 
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 
 if ( CMAKE_HOST_UNIX )
-  set(NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o)
+  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o )
 elseif ( CMAKE_HOST_WIN32 )
-  set(NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.obj)
+  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.obj )
 endif ()
 
 add_custom_command (
@@ -62,8 +62,13 @@ target_include_directories ( test
   ${PROJECT_SOURCE_DIR}/include
   )
 
-target_link_libraries ( test PUBLIC co pthread )
+target_link_libraries ( test PUBLIC co )
 
+if ( CMAKE_HOST_UNIX )
+  target_link_libraries ( test PUBLIC pthread )
+endif ()
+
+#####################################
 
 function ( dump_cmake_variables )
   get_cmake_property ( _variableNames VARIABLES )

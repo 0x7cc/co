@@ -1,6 +1,7 @@
 bits 64
 
-global co_exec
+global co_store_context
+global co_load_context
 global co_swap_context
 
 %define elf64_fastcall_argv0 rdi
@@ -45,40 +46,46 @@ struc co_context
 .r15 resb 8
 endstruc
 
+section .text
 
-co_get_rip:
-  mov rax, [rsp]  ; 取出返回地址
-  ret
-
-co_exec:
-
-  push rbp
-  mov rbp, rsp
-
+co_store_context:
   mov r10, argv0
 
-  mov rax , qword [r10 + co_context.rax]
-  mov rbx , qword [r10 + co_context.rbx]
-  mov rcx , qword [r10 + co_context.rcx]
-  mov rdx , qword [r10 + co_context.rdx]
-  mov rsi , qword [r10 + co_context.rsi]
-  mov rdi , qword [r10 + co_context.rdi]
-  mov rbp , qword [r10 + co_context.rbp]
-  mov rsp , qword [r10 + co_context.rsp]
-  mov r8  , qword [r10 + co_context.r8 ]
-  mov r9  , qword [r10 + co_context.r9 ]
-  mov r12 , qword [r10 + co_context.r12]
-  mov r13 , qword [r10 + co_context.r13]
-  mov r14 , qword [r10 + co_context.r14]
-  mov r15 , qword [r10 + co_context.r15]
+  mov qword [r10 + co_context.rax], rax ;
+  mov qword [r10 + co_context.rbx], rbx ;
+  mov qword [r10 + co_context.rcx], rcx ;
+  mov qword [r10 + co_context.rdx], rdx ;
+  mov qword [r10 + co_context.rsi], rsi ;
+  mov qword [r10 + co_context.rdi], rdi ;
+  mov qword [r10 + co_context.rbp], rbp ;
+  mov qword [r10 + co_context.rsp], rsp ;
+  mov qword [r10 + co_context.r8 ], r8  ;
+  mov qword [r10 + co_context.r9 ], r9  ;
+  mov qword [r10 + co_context.r12], r12 ;
+  mov qword [r10 + co_context.r13], r13 ;
+  mov qword [r10 + co_context.r14], r14 ;
+  mov qword [r10 + co_context.r15], r15 ;
+  mov qword [r10 + co_context.rip], .end ;
+  .end:
+  ret
 
-  ;;;;;;;;; 进入协程态
-
-  call qword [r10 + co_context.rip]
-
-
-
-  pop rbp
+co_load_context:
+  mov r11 , argv0
+  mov rax , qword [r11 + co_context.rax]
+  mov rbx , qword [r11 + co_context.rbx]
+  mov rcx , qword [r11 + co_context.rcx]
+  mov rdx , qword [r11 + co_context.rdx]
+  mov rsi , qword [r11 + co_context.rsi]
+  mov rdi , qword [r11 + co_context.rdi]
+  mov rbp , qword [r11 + co_context.rbp]
+  mov rsp , qword [r11 + co_context.rsp]
+  mov r8  , qword [r11 + co_context.r8 ]
+  mov r9  , qword [r11 + co_context.r9 ]
+  mov r12 , qword [r11 + co_context.r12]
+  mov r13 , qword [r11 + co_context.r13]
+  mov r14 , qword [r11 + co_context.r14]
+  mov r15 , qword [r11 + co_context.r15]
+  jmp [r11 + co_context.rip]
 
   ret
 

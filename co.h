@@ -79,89 +79,48 @@ static_assert (sizeof (co_int64) == 8, "");
   #define NULL 0
 #endif
 // clang-format on
-typedef struct co_context_s
-{
-  co_uint rax;
-  co_uint rbx;
-  co_uint rcx;
-  co_uint rdx;
-  co_uint rsi;
-  co_uint rdi;
-  co_uint rsp;
-  co_uint rbp;
-  co_uint rip;
-#if __x86_64__ || _WIN64
-  co_uint64 r8;
-  co_uint64 r9;
-  co_uint64 r12;
-  co_uint64 r13;
-  co_uint64 r14;
-  co_uint64 r15;
-#endif
-} co_context_t;
 
-typedef struct co_thread_s co_thread_t;
-typedef void (*co_func) (co_thread_t* ctx, void* data);
-typedef struct co_task_s
-{
-  struct co_task_s* next;
-  void*             stack;
-  co_context_t      ctx;
-} co_task_t;
-
-typedef struct co_thread_s
-{
-  /***
-   * 循环链表
-   */
-  co_task_t* task_head;
-  co_task_t* task_end;
-  co_task_t* task_current;
-} co_thread_t;
+typedef void (*co_func) (void* data);
 
 /**
- * 在一个线程中安装
- * @param thread
+ * 在一个线程中启用协程
  * @return
  */
-co_extern co_int co_setup (co_thread_t* thread);
+co_extern co_int co_enable ();
 
 /**
- * 在当前任务中添加一个协程
- * @param thread
+ * 在当前线程中添加一个协程
  * @param func
  * @param data
  * @return
  */
-co_extern co_int co_add (co_thread_t* thread, co_func func, void* data);
+co_extern co_int co_add (co_func func, void* data);
 
 /**
  * 等待所有协程执行完毕
- * @param thread
  * @return
  */
-co_extern co_int co_wait (co_thread_t* thread);
+co_extern co_int co_wait ();
 
 /**
  * 让出执行权
- * @param thread
  * @return
  */
-co_extern co_int co_yield(co_thread_t* thread);
+co_extern co_int co_yield();
 
 /**
- * 交换协程上下文, 执行后将会执行协程.
- * @param ctx     协程的context
- * @return
+ *
+ * @param func
+ * @param data
+ * @return thread id
  */
-co_extern co_int co_exec (co_context_t* ctx);
+co_extern co_int co_thread_create (co_func func, void* data);
 
 /**
- * 切换上下文
- * @param store    协程的context
- * @param load     协程的context
+ *
+ * @param tid
  * @return
  */
-co_extern co_int co_swap_context (co_context_t* store, co_context_t* load);
+co_extern co_int co_thread_join (co_int tid);
 
 #endif
