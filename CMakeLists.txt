@@ -1,8 +1,8 @@
-cmake_minimum_required ( VERSION 3.13 )
+cmake_minimum_required ( VERSION 2.8 )
 
-project ( co )
-set ( CMAKE_C_STANDARD 99 )
-set ( CMAKE_CXX_STANDARD 11 )
+project ( co C )
+#set ( CMAKE_C_STANDARD 99 )
+#set ( CMAKE_CXX_STANDARD 11 )
 
 include ( GNUInstallDirs )
 include ( TestBigEndian )
@@ -15,27 +15,42 @@ set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug/ )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 
+if ( CMAKE_HOST_UNIX )
+  set(NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o)
+elseif ( CMAKE_HOST_WIN32 )
+  set(NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.obj)
+endif ()
+
 add_custom_command (
-  OUTPUT ${PROJECT_SOURCE_DIR}/co.o
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
   DEPENDS ${PROJECT_SOURCE_DIR}/co.asm
-  COMMAND nasm -f elf64 ${PROJECT_SOURCE_DIR}/co.asm -g
-  COMMENT "nasm generate co file"
+  COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${PROJECT_SOURCE_DIR}/co.asm
+  COMMENT "nasm generate elf64 file"
+)
+
+add_custom_command (
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.obj
+  DEPENDS ${PROJECT_SOURCE_DIR}/co.asm
+  COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${PROJECT_SOURCE_DIR}/co.asm
+  COMMENT "nasm generate win64 file"
 )
 
 #####################################
 
 add_library ( co
+  STATIC
   co.c
   co.h
   co_win.c
   co_x.c
-  ${PROJECT_SOURCE_DIR}/co.o
+  ${NASM_OBJ}
   )
 
 target_include_directories ( co
   PUBLIC
   ${PROJECT_SOURCE_DIR}/include
   )
+
 #####################################
 
 add_executable ( test
@@ -65,4 +80,4 @@ function ( dump_cmake_variables )
   endforeach ()
 endfunction ()
 
-# dump_cmake_variables ()
+#dump_cmake_variables ()

@@ -35,7 +35,7 @@ co_int co_add (co_thread_t* thread, co_func func, void* data)
   task->ctx.argv0 = (co_uint)thread;
   task->ctx.argv1 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack + stack_size);
+  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stack_size;
   co_task_stack_push (task, (co_int)co_task_finished);
 
   thread->task_end = node->next = task;

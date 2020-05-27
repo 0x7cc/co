@@ -23,7 +23,7 @@ void coroutine_2 (co_thread_t* ctx, void* data)
   puts ("coroutine 2 end");
 }
 
-thread_local int a;
+//thread_local int a;
 
 void* work (void* a)
 {
