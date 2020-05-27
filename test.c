@@ -7,7 +7,7 @@
 
 void coroutine_1 (void* data)
 {
-  while (1)
+  for (int i = 0; i < 10; ++i)
   {
     printf ("coroutine 1 : %p\n", data);
     co_yield();
@@ -16,7 +16,7 @@ void coroutine_1 (void* data)
 
 void coroutine_2 (void* data)
 {
-  while (1)
+  for (register int i = 0; i < 10; ++i)
   {
     printf ("coroutine 2 : %p\n", data);
     co_yield();

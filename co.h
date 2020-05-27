@@ -123,4 +123,10 @@ co_extern co_int co_thread_create (co_func func, void* data);
  */
 co_extern co_int co_thread_join (co_int tid);
 
+co_extern void* co_alloc (co_uint size);
+
+co_extern void* co_calloc (co_uint size);
+
+co_extern void co_free (void* ptr);
+
 #endif

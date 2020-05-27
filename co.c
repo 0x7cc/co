@@ -26,6 +26,7 @@ typedef struct co_task_context_s
 
 typedef struct co_task_s
 {
+  struct co_task_s* prev;
   struct co_task_s* next;
   void*             stack;
   co_task_context_t ctx;
@@ -34,20 +35,25 @@ typedef struct co_task_s
 typedef struct co_thread_context_s
 {
   /***
-   * 循环链表
+   * 循环链表的头节点
    */
   co_task_t* task_head;
-  co_task_t* task_end;
+
+  /**
+   * 尾指针，方便快速添加新协程
+   */
+  co_task_t* task_last;
+
+  /**
+   * 当前运行的任务指针
+   */
   co_task_t* task_current;
 } co_thread_context_t;
 
+/**
+ * 这个变量在每个线程中的地址都应该不同.
+ */
 static thread_local co_thread_context_t threadCtx;
-
-static void co_task_stack_push (co_task_t* task, co_int value)
-{
-  task->ctx.rsp -= sizeof (co_int);
-  *((co_int*)task->ctx.rsp) = value;
-}
 
 /**
  * 切换上下文(由汇编实现)
@@ -69,69 +75,71 @@ extern co_int co_store_context (co_task_context_t* ctx);
  */
 extern co_int co_load_context (co_task_context_t* ctx);
 
+static void co_task_stack_push (co_task_t* task, co_int value)
+{
+  task->ctx.rsp -= sizeof (co_int);
+  *((co_int*)task->ctx.rsp) = value;
+}
+
 co_int co_enable ()
 {
   memset (&threadCtx, 0, sizeof (co_thread_context_t));
-  threadCtx.task_head = (co_task_t*)calloc (1, sizeof (co_task_t));
+  threadCtx.task_head = (co_task_t*)co_calloc (sizeof (co_task_t));
 
+  threadCtx.task_head->prev = threadCtx.task_head;
   threadCtx.task_head->next = threadCtx.task_head;
-  threadCtx.task_end        = threadCtx.task_head;
+  threadCtx.task_last       = threadCtx.task_head;
   return 0;
 }
 
-static co_int co_task_finished (co_task_t* task)
+static void co_del ()
 {
-  return 0;
+  register co_task_t* task = threadCtx.task_current;
+
+  if (threadCtx.task_last == task)
+    threadCtx.task_last = task->prev;
+
+  threadCtx.task_current = task->next;
+  task->prev->next       = task->next;
+  task->next->prev       = task->prev;
+
+  co_free (task->stack);
+  co_free (task);
+
+  co_load_context (&(threadCtx.task_current->ctx));
 }
 
 co_int co_add (co_func func, void* data)
 {
-  co_task_t*   task       = (co_task_t*)calloc (1, sizeof (co_task_t));
-  co_task_t*   node       = threadCtx.task_end;
-  const size_t stack_size = 1024 * 2048; // 每个协程给2MiB的栈空间
+  register co_task_t* task       = (co_task_t*)co_calloc (sizeof (co_task_t));
+  register co_task_t* last       = threadCtx.task_last;
+  const size_t        stack_size = 1024 * 2048; // 每个协程给2MiB的栈空间
 
+  task->prev      = last;
   task->next      = threadCtx.task_head;
-  task->stack     = calloc (1, stack_size);
+  task->stack     = co_calloc (stack_size);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
   task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stack_size;
-  co_task_stack_push (task, (co_int)co_task_finished);
+  co_task_stack_push (task, (co_int)co_del);
 
-  threadCtx.task_end = node->next = task;
+  threadCtx.task_last = last->next = task;
 
   return 0;
 }
 
 co_int co_wait ()
 {
-  register co_task_t* L;
-  register co_task_t* R;
   register co_task_t* task;
 
   co_store_context (&(threadCtx.task_head->ctx));
 
-  if (threadCtx.task_head->next == nullptr)
+  if (threadCtx.task_head->next == threadCtx.task_head)
     return 0;
 
-  L    = threadCtx.task_head;
-  task = L->next;
+  task = threadCtx.task_current = threadCtx.task_head->next;
+  co_load_context (&(threadCtx.task_head->next->ctx));
 
-  while (task)
-  {
-    if (task == threadCtx.task_head)
-      return 0;
-
-    R = task->next;
-
-    threadCtx.task_current = task;
-    co_load_context (&(task->ctx));
-
-    // 协程运行结束返回了,释放内存.
-    L->next = R;
-    free (task);
-
-    task = R;
-  }
   return 0;
 }
 
@@ -148,4 +156,19 @@ co_int co_yield()
   threadCtx.task_current = next;
   co_swap_context (&(current->ctx), &(next->ctx));
   return 0;
+}
+
+void* co_alloc (co_uint size)
+{
+  return malloc (size);
+}
+
+void* co_calloc (co_uint size)
+{
+  return calloc (1, size);
+}
+
+void co_free (void* ptr)
+{
+  free (ptr);
 }
