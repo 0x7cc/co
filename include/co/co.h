@@ -8,6 +8,10 @@
 #else
   #define CO_EXTERN
 
+  #ifndef nullptr
+    #define nullptr 0
+  #endif
+
   #if _WIN32
     #define thread_local  __declspec(thread)
   #else
@@ -20,30 +24,6 @@
   #define CO_API CO_EXTERN __declspec(dllexport)
 #else
   #define CO_API CO_EXTERN
-#endif
-
-#define elf64_fastcall_argv0 rdi
-#define elf64_fastcall_argv1 rsi
-#define elf64_fastcall_argv2 rdx
-#define elf64_fastcall_argv3 rcx
-
-#define win64_fastcall_argv0 rcx
-#define win64_fastcall_argv1 rdx
-#define win64_fastcall_argv2 r8
-#define win64_fastcall_argv3 r9
-
-#if __linux__ && __x86_64__
-  #define argv0 elf64_fastcall_argv0
-  #define argv1 elf64_fastcall_argv1
-  #define argv2 elf64_fastcall_argv2
-  #define argv3 elf64_fastcall_argv3
-#elif _WIN64
-  #define argv0 win64_fastcall_argv0
-  #define argv1 win64_fastcall_argv1
-  #define argv2 win64_fastcall_argv2
-  #define argv3 win64_fastcall_argv3
-#else
-  #error "目前只支持64位格式的fastcall"
 #endif
 
 typedef signed char        co_int8;
@@ -78,15 +58,9 @@ static_assert (sizeof (co_int64) == 8, "");
   #error "wtf???"
 #endif
 
-#ifndef nullptr
-  #define nullptr 0
-#endif
-
 #ifndef NULL
   #define NULL 0
 #endif
-
-#define CO_STACK_SIZE 0x100000ull
 
 // clang-format on
 
@@ -100,11 +74,12 @@ CO_API co_int co_enable ();
 
 /**
  * 在当前线程中添加一个协程
- * @param func
- * @param data
+ * @param func      协程的入口函数
+ * @param data      func执行时的参数
+ * @param stackSize 分配给该协程的栈大小
  * @return
  */
-CO_API co_int co_add (co_func func, void* data);
+CO_API co_int co_add (co_func func, void* data, co_int stackSize);
 
 /**
  * 等待所有协程执行完毕

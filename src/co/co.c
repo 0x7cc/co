@@ -3,6 +3,34 @@
 #include <string.h>
 #include <stdlib.h>
 
+// clang-format off
+
+#define elf64_fastcall_argv0 rdi
+#define elf64_fastcall_argv1 rsi
+#define elf64_fastcall_argv2 rdx
+#define elf64_fastcall_argv3 rcx
+
+#define win64_fastcall_argv0 rcx
+#define win64_fastcall_argv1 rdx
+#define win64_fastcall_argv2 r8
+#define win64_fastcall_argv3 r9
+
+#if __linux__ && __x86_64__
+  #define argv0 elf64_fastcall_argv0
+  #define argv1 elf64_fastcall_argv1
+  #define argv2 elf64_fastcall_argv2
+  #define argv3 elf64_fastcall_argv3
+#elif _WIN64
+  #define argv0 win64_fastcall_argv0
+  #define argv1 win64_fastcall_argv1
+  #define argv2 win64_fastcall_argv2
+  #define argv3 win64_fastcall_argv3
+#else
+  #error "目前只支持64位格式的fastcall"
+#endif
+
+// clang-format on
+
 typedef struct co_task_context_s
 {
   co_uint rax;
@@ -99,17 +127,18 @@ static void co_exited ()
   co_load_context (&(threadCtx.task_head->ctx));
 }
 
-co_int co_add (co_func func, void* data)
+co_int co_add (co_func func, void* data, co_int stackSize)
 {
   register co_task_t* task = (co_task_t*)co_calloc (sizeof (co_task_t));
   register co_task_t* last = threadCtx.task_last;
+  stackSize &= 0xFFFFFFFFFFFFFFF8;
 
   task->prev      = last;
   task->next      = threadCtx.task_head;
-  task->stack     = co_calloc (CO_STACK_SIZE);
+  task->stack     = co_alloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + CO_STACK_SIZE - sizeof (co_uintptr);
+  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stackSize - sizeof (co_uintptr);
   co_task_stack_push (task, (co_int)co_exited);
 
   threadCtx.task_last = last->next = task;
