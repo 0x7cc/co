@@ -127,7 +127,7 @@ static void co_exited ()
   co_load_context (&(threadCtx.task_head->ctx));
 }
 
-co_int co_add (co_func func, void* data, co_int stackSize)
+co_int co_add (co_func func, void* data, co_uint stackSize)
 {
   register co_task_t* task = (co_task_t*)co_calloc (sizeof (co_task_t));
   register co_task_t* last = threadCtx.task_last;
@@ -135,10 +135,10 @@ co_int co_add (co_func func, void* data, co_int stackSize)
 
   task->prev      = last;
   task->next      = threadCtx.task_head;
-  task->stack     = co_alloc (stackSize);
+  task->stack     = co_calloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp = task->ctx.rbp = (co_uint) (task->stack) + stackSize - sizeof (co_uintptr);
+  task->ctx.rsp   = ((co_uint)task->stack) + stackSize - sizeof (co_uintptr);
   co_task_stack_push (task, (co_int)co_exited);
 
   threadCtx.task_last = last->next = task;

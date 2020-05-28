@@ -87,7 +87,7 @@ CO_API co_int co_enable ();
  * @param stackSize 分配给该协程的栈大小
  * @return
  */
-CO_API co_int co_add (co_func func, void* data, co_int stackSize);
+CO_API co_int co_add (co_func func, void* data, co_uint stackSize);
 
 /**
  * 等待所有协程执行完毕

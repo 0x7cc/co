@@ -15,25 +15,27 @@ set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug/ )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 
-if ( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
-  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o )
-elseif ( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.obj )
-endif ()
+#####################################
 
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
-  DEPENDS src/co/co.asm
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
   COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
   COMMENT "nasm generate elf64 file"
 )
 
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.obj
-  DEPENDS src/co/co.asm
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
   COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
   COMMENT "nasm generate win64 file"
 )
+
+if ( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
+  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o )
+elseif ( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.obj )
+endif ()
 
 #####################################
 
@@ -50,10 +52,6 @@ target_include_directories ( co
   PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/include
   )
-
-if ( target_type STREQUAL "EXECUTABLE" )
-  # Process executable target
-endif ()
 
 if ( CMAKE_HOST_UNIX )
   target_link_libraries ( co PUBLIC pthread )
