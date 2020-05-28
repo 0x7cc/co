@@ -24,14 +24,14 @@ endif ()
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
   DEPENDS src/co/co.asm
-  COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${PROJECT_SOURCE_DIR}/src/co/co.asm
+  COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
   COMMENT "nasm generate elf64 file"
 )
 
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.obj
   DEPENDS src/co/co.asm
-  COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${PROJECT_SOURCE_DIR}/src/co/co.asm
+  COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
   COMMENT "nasm generate win64 file"
 )
 
@@ -48,12 +48,20 @@ add_library ( co
 
 target_include_directories ( co
   PUBLIC
-  ${PROJECT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include
   )
+
+if ( target_type STREQUAL "EXECUTABLE" )
+  # Process executable target
+endif ()
 
 if ( CMAKE_HOST_UNIX )
   target_link_libraries ( co PUBLIC pthread )
 endif ()
+
+#if ( MSVC )
+#  set_target_properties ( co PROPERTIES LINK_FLAGS "/DEF:\"${CMAKE_CURRENT_LIST_DIR}/co/co.def\" " )
+#endif ()
 
 #####################################
 
@@ -63,7 +71,7 @@ add_executable ( testc
 
 target_include_directories ( testc
   PUBLIC
-  ${PROJECT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include
   )
 
 target_link_libraries ( testc PUBLIC co )
@@ -76,7 +84,7 @@ add_executable ( testcpp
 
 target_include_directories ( testcpp
   PUBLIC
-  ${PROJECT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include
   )
 
 target_link_libraries ( testcpp PUBLIC co )

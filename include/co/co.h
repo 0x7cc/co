@@ -2,10 +2,11 @@
 #define co_H
 
 // clang-format off
+
 #if __cplusplus
-  #define co_extern extern "C"
+  #define CO_EXTERN extern "C"
 #else
-  #define co_extern
+  #define CO_EXTERN
 
   #if _WIN32
     #define thread_local  __declspec(thread)
@@ -13,6 +14,12 @@
     #define static_assert _Static_assert
     #define thread_local  __thread
   #endif
+#endif
+
+#if defined(_WIN32) && defined(_WINDLL)
+  #define CO_API CO_EXTERN __declspec(dllexport)
+#else
+  #define CO_API CO_EXTERN
 #endif
 
 #define elf64_fastcall_argv0 rdi
@@ -80,6 +87,7 @@ static_assert (sizeof (co_int64) == 8, "");
 #endif
 
 #define CO_STACK_SIZE 0x100000ull
+
 // clang-format on
 
 typedef void (*co_func) (void* data);
@@ -88,7 +96,7 @@ typedef void (*co_func) (void* data);
  * 在一个线程中启用协程功能
  * @return
  */
-co_extern co_int co_enable ();
+CO_API co_int co_enable ();
 
 /**
  * 在当前线程中添加一个协程
@@ -96,19 +104,19 @@ co_extern co_int co_enable ();
  * @param data
  * @return
  */
-co_extern co_int co_add (co_func func, void* data);
+CO_API co_int co_add (co_func func, void* data);
 
 /**
  * 等待所有协程执行完毕
  * @return
  */
-co_extern co_int co_wait ();
+CO_API co_int co_wait ();
 
 /**
  * 让出执行权
  * @return
  */
-co_extern co_int co_yield ();
+CO_API co_int co_yield ();
 
 /**
  * 创建线程
@@ -116,33 +124,33 @@ co_extern co_int co_yield ();
  * @param data
  * @return thread id
  */
-co_extern co_int co_thread_create (co_func func, void* data);
+CO_API co_int co_thread_create (co_func func, void* data);
 
 /**
  * 等待线程
  * @param tid
  * @return
  */
-co_extern co_int co_thread_join (co_int tid);
+CO_API co_int co_thread_join (co_int tid);
 
 /**
  * malloc
  * @param size
  * @return
  */
-co_extern void* co_alloc (co_uint size);
+CO_API void* co_alloc (co_uint size);
 
 /**
  * calloc
  * @param size
  * @return
  */
-co_extern void* co_calloc (co_uint size);
+CO_API void* co_calloc (co_uint size);
 
 /**
  * free
  * @param ptr
  */
-co_extern void co_free (void* ptr);
+CO_API void co_free (void* ptr);
 
 #endif
