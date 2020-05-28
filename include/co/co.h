@@ -13,10 +13,18 @@
   #endif
 
   #if _WIN32
+
     #define thread_local  __declspec(thread)
+
+    #if __MINGW64__
+      #define static_assert _Static_assert
+    #endif
+
   #else
+
     #define static_assert _Static_assert
     #define thread_local  __thread
+
   #endif
 #endif
 
