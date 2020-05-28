@@ -1,8 +1,8 @@
 cmake_minimum_required ( VERSION 2.8 )
 
-project ( co C )
-#set ( CMAKE_C_STANDARD 99 )
-#set ( CMAKE_CXX_STANDARD 11 )
+project ( co )
+set ( CMAKE_C_STANDARD 99 )
+set ( CMAKE_CXX_STANDARD 11 )
 
 include ( GNUInstallDirs )
 include ( TestBigEndian )
@@ -51,22 +51,35 @@ target_include_directories ( co
   ${PROJECT_SOURCE_DIR}/include
   )
 
+if ( CMAKE_HOST_UNIX )
+  target_link_libraries ( co PUBLIC pthread )
+endif ()
+
 #####################################
 
-add_executable ( test
+add_executable ( testc
   tests/test.c
   )
 
-target_include_directories ( test
+target_include_directories ( testc
   PUBLIC
   ${PROJECT_SOURCE_DIR}/include
   )
 
-target_link_libraries ( test PUBLIC co )
+target_link_libraries ( testc PUBLIC co )
 
-if ( CMAKE_HOST_UNIX )
-  target_link_libraries ( test PUBLIC pthread )
-endif ()
+#####################################
+
+add_executable ( testcpp
+  tests/test.cpp
+  )
+
+target_include_directories ( testcpp
+  PUBLIC
+  ${PROJECT_SOURCE_DIR}/include
+  )
+
+target_link_libraries ( testcpp PUBLIC co )
 
 #####################################
 
