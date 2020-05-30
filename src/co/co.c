@@ -5,26 +5,33 @@
 
 // clang-format off
 
-#define elf64_fastcall_argv0 rdi
-#define elf64_fastcall_argv1 rsi
-#define elf64_fastcall_argv2 rdx
-#define elf64_fastcall_argv3 rcx
+#define elf64_fastcall_argv0 di
+#define elf64_fastcall_argv1 si
+#define elf64_fastcall_argv2 dx
+#define elf64_fastcall_argv3 cx
 
-#define win64_fastcall_argv0 rcx
-#define win64_fastcall_argv1 rdx
+#define win64_fastcall_argv0 cx
+#define win64_fastcall_argv1 dx
 #define win64_fastcall_argv2 r8
 #define win64_fastcall_argv3 r9
 
-#if __x86_64__
-  #define argv0 elf64_fastcall_argv0
-  #define argv1 elf64_fastcall_argv1
-  #define argv2 elf64_fastcall_argv2
-  #define argv3 elf64_fastcall_argv3
-#elif _WIN64
-  #define argv0 win64_fastcall_argv0
-  #define argv1 win64_fastcall_argv1
-  #define argv2 win64_fastcall_argv2
-  #define argv3 win64_fastcall_argv3
+#if __x86_64__ || _WIN64
+  #if __linux__
+    #define argv0 elf64_fastcall_argv0
+    #define argv1 elf64_fastcall_argv1
+    #define argv2 elf64_fastcall_argv2
+    #define argv3 elf64_fastcall_argv3
+  #elif __APPLE__
+    #define argv0 elf64_fastcall_argv0
+    #define argv1 elf64_fastcall_argv1
+    #define argv2 elf64_fastcall_argv2
+    #define argv3 elf64_fastcall_argv3
+  #elif _WIN64
+    #define argv0 win64_fastcall_argv0
+    #define argv1 win64_fastcall_argv1
+    #define argv2 win64_fastcall_argv2
+    #define argv3 win64_fastcall_argv3
+  #endif
 #else
   #error "目前只支持64位格式的fastcall"
 #endif
@@ -33,15 +40,15 @@
 
 typedef struct co_task_context_s
 {
-  co_uint rax;
-  co_uint rbx;
-  co_uint rcx;
-  co_uint rdx;
-  co_uint rsi;
-  co_uint rdi;
-  co_uint rsp;
-  co_uint rbp;
-  co_uint rip;
+  co_uint ax;
+  co_uint bx;
+  co_uint cx;
+  co_uint dx;
+  co_uint si;
+  co_uint di;
+  co_uint sp;
+  co_uint bp;
+  co_uint ip;
 #if __x86_64__ || _WIN64
   co_uint64 r8;
   co_uint64 r9;
@@ -104,10 +111,24 @@ extern co_int co_store_context (co_task_context_t* ctx);
  */
 extern co_int co_load_context (co_task_context_t* ctx);
 
+/**
+ * 往携程的栈中push数据
+ * @param task
+ * @param value
+ */
 static void co_task_stack_push (co_task_t* task, co_int value)
 {
-  task->ctx.rsp -= sizeof (co_int);
-  *((co_int*)task->ctx.rsp) = value;
+  task->ctx.sp -= sizeof (co_int);
+  *((co_int*)task->ctx.sp) = value;
+}
+
+/**
+ * 携程执行结束返回时的处理函数
+ */
+static void co_exited ()
+{
+  threadCtx.task_current->status = -1;
+  co_load_context (&(threadCtx.task_head->ctx));
 }
 
 co_int co_enable ()
@@ -121,12 +142,6 @@ co_int co_enable ()
   return 0;
 }
 
-static void co_exited ()
-{
-  threadCtx.task_current->status = -1;
-  co_load_context (&(threadCtx.task_head->ctx));
-}
-
 co_int co_add (co_func func, void* data, co_uint stackSize)
 {
   register co_task_t* task = (co_task_t*)co_calloc (sizeof (co_task_t));
@@ -137,8 +152,8 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   task->next      = threadCtx.task_head;
   task->stack     = co_calloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
-  task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp   = ((co_uint)task->stack) + stackSize - 16; // 16-byte align.
+  task->ctx.ip    = (co_uint)func;
+  task->ctx.sp    = ((co_uint)task->stack) + stackSize - 16; // 16-byte align.
   co_task_stack_push (task, (co_int)co_exited);
 
   threadCtx.task_last = last->next = task;
@@ -176,7 +191,7 @@ co_int co_wait ()
   return 0;
 }
 
-co_int co_yield ()
+co_int co_yield()
 {
   co_swap_context (&(threadCtx.task_current->ctx), &(threadCtx.task_head->ctx));
   return 0;
