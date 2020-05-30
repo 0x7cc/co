@@ -112,17 +112,6 @@ extern co_int co_store_context (co_task_context_t* ctx);
 extern co_int co_load_context (co_task_context_t* ctx);
 
 /**
- * 往携程的栈中push数据
- * @param task
- * @param value
- */
-static void co_task_stack_push (co_task_t* task, co_int value)
-{
-  task->ctx.sp -= sizeof (co_int);
-  *((co_int*)task->ctx.sp) = value;
-}
-
-/**
  * 携程执行结束返回时的处理函数
  */
 static void co_exited ()
@@ -148,13 +137,13 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   register co_task_t* last = threadCtx.task_last;
   stackSize &= 0xFFFFFFFFFFFFFFF8;
 
-  task->prev      = last;
-  task->next      = threadCtx.task_head;
-  task->stack     = co_calloc (stackSize);
-  task->ctx.argv0 = (co_uint)data;
-  task->ctx.ip    = (co_uint)func;
-  task->ctx.sp    = ((co_uint)task->stack) + stackSize - 16; // 16-byte align.
-  co_task_stack_push (task, (co_int)co_exited);
+  task->prev               = last;
+  task->next               = threadCtx.task_head;
+  task->stack              = co_calloc (stackSize);
+  task->ctx.argv0          = (co_uint)data;
+  task->ctx.ip             = (co_uint)func;
+  task->ctx.sp             = (((co_uint)task->stack) + stackSize - 16) & 0xFFFFFFFFFFFFFFF0; // 16-byte align.
+  *((co_int*)task->ctx.sp) = (co_uint)co_exited;
 
   threadCtx.task_last = last->next = task;
 

@@ -36,16 +36,16 @@ void coroutine_2 (void* data)
 void work (void* a)
 {
   co_enable ();
-  co_add (coroutine_1, (void*)0x1111, 0x1000);
-  co_add (coroutine_2, (void*)0x2222, 0x1000);
+  co_add (coroutine_1, (void*)0x1111, 0x4000);
+  co_add (coroutine_2, (void*)0x2222, 0x4000);
   co_wait ();
 }
 
 void work2 (void* a)
 {
   co_enable ();
-  co_add (coroutine_1, (void*)0x3333, 0x1000);
-  co_add (coroutine_2, (void*)0x4444, 0x1000);
+  co_add (coroutine_1, (void*)0x3333, 0x4000);
+  co_add (coroutine_2, (void*)0x4444, 0x4000);
   co_wait ();
 }
 
