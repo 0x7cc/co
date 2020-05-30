@@ -191,7 +191,7 @@ co_int co_wait ()
   return 0;
 }
 
-co_int co_yield()
+co_int co_yield ()
 {
   co_swap_context (&(threadCtx.task_current->ctx), &(threadCtx.task_head->ctx));
   return 0;

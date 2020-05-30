@@ -99,7 +99,7 @@ CO_API co_int co_wait ();
  * 让出执行权
  * @return
  */
-CO_API co_int co_yield();
+CO_API co_int co_yield ();
 
 /**
  * 创建线程
