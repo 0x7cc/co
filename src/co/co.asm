@@ -19,6 +19,11 @@ global co_swap_context
   %define argv1 elf64_fastcall_argv1
   %define argv2 elf64_fastcall_argv2
   %define argv3 elf64_fastcall_argv3
+%elifidn __OUTPUT_FORMAT__, macho64
+  %define argv0 elf64_fastcall_argv0
+  %define argv1 elf64_fastcall_argv1
+  %define argv2 elf64_fastcall_argv2
+  %define argv3 elf64_fastcall_argv3
 %elifidn __OUTPUT_FORMAT__, win64
   %define argv0 win64_fastcall_argv0
   %define argv1 win64_fastcall_argv1

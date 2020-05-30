@@ -15,7 +15,7 @@
 #define win64_fastcall_argv2 r8
 #define win64_fastcall_argv3 r9
 
-#if __linux__ && __x86_64__
+#if __x86_64__
   #define argv0 elf64_fastcall_argv0
   #define argv1 elf64_fastcall_argv1
   #define argv2 elf64_fastcall_argv2
@@ -138,7 +138,7 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   task->stack     = co_calloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.rip   = (co_uint)func;
-  task->ctx.rsp   = ((co_uint)task->stack) + stackSize - sizeof (co_uintptr);
+  task->ctx.rsp   = ((co_uint)task->stack) + stackSize - 16; // 16-byte align.
   co_task_stack_push (task, (co_int)co_exited);
 
   threadCtx.task_last = last->next = task;

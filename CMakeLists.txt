@@ -17,24 +17,30 @@ set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ 
 
 #####################################
 
-add_custom_command (
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
-  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
-  COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
-  COMMENT "nasm generate elf64 file"
-)
-
-add_custom_command (
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.obj
-  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
-  COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
-  COMMENT "nasm generate win64 file"
-)
-
 if ( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
+  add_custom_command (
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
+    COMMAND nasm -f elf64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
+    COMMENT "nasm generate elf64 file"
+  )
   set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o )
 elseif ( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+  add_custom_command (
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.obj
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
+    COMMAND nasm -f win64 -o ${CMAKE_CURRENT_BINARY_DIR}/co.obj ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
+    COMMENT "nasm generate win64 file"
+  )
   set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.obj )
+elseif ( ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" )
+  add_custom_command (
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/co.o
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
+    COMMAND nasm -f macho64 --gprefix _ -o ${CMAKE_CURRENT_BINARY_DIR}/co.o ${CMAKE_CURRENT_LIST_DIR}/src/co/co.asm
+    COMMENT "nasm generate macho64 file"
+  )
+  set ( NASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/co.o )
 endif ()
 
 #####################################
