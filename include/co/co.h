@@ -96,7 +96,7 @@ CO_API co_int co_add (co_func func, void* data, co_uint stackSize);
  * 等待所有协程执行完毕
  * @return
  */
-CO_API co_int co_wait ();
+CO_API co_int co_run ();
 
 /**
  * 让出执行权

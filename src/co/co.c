@@ -153,7 +153,7 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   return 0;
 }
 
-co_int co_wait ()
+co_int co_run ()
 {
   register co_task_t* task = threadCtx.task_head->next;
 

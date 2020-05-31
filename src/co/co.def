@@ -2,11 +2,15 @@ LIBRARY
 EXPORTS
 co_enable
 co_add
-co_wait
+co_run
 co_yield
 co_thread_create
 co_thread_join
 co_alloc
 co_calloc
 co_free
-
+co_atomic_set
+co_atomic_inc
+co_atomic_dec
+co_atomic_add
+co_atomic_sub

@@ -38,7 +38,7 @@ void work (void* a)
   co_enable ();
   co_add (coroutine_1, (void*)0x1111, 0);
   co_add (coroutine_2, (void*)0x2222, 0);
-  co_wait ();
+  co_run ();
 }
 
 void work2 (void* a)
@@ -46,7 +46,7 @@ void work2 (void* a)
   co_enable ();
   co_add (coroutine_1, (void*)0x3333, 0);
   co_add (coroutine_2, (void*)0x4444, 0);
-  co_wait ();
+  co_run ();
 }
 
 int main (int argc, char* argv[])
