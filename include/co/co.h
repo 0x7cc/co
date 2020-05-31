@@ -139,4 +139,10 @@ CO_API void* co_calloc (co_uint size);
  */
 CO_API void co_free (void* ptr);
 
+CO_API void co_atomic_set (co_uint* mem, co_uint value);
+CO_API void co_atomic_inc (co_uint* mem);
+CO_API void co_atomic_dec (co_uint* mem);
+CO_API void co_atomic_add (co_uint* mem, co_uint value);
+CO_API void co_atomic_sub (co_uint* mem, co_uint value);
+
 #endif

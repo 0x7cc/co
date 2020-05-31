@@ -1,5 +1,10 @@
 bits 64
 
+globaL co_atomic_set
+globaL co_atomic_inc
+global co_atomic_dec
+global co_atomic_add
+global co_atomic_sub
 global co_store_context
 global co_load_context
 global co_swap_context
@@ -52,6 +57,26 @@ struc co_context
 endstruc
 
 section .text
+
+co_atomic_set:
+  xchg qword [argv0], argv1
+  ret
+
+co_atomic_inc:
+  lock inc qword [argv0]
+  ret
+
+co_atomic_dec:
+  lock dec qword [argv0]
+  ret
+
+co_atomic_add:
+  lock add qword [argv0], argv1
+  ret
+
+co_atomic_sub:
+  lock sub qword [argv0], argv1
+  ret
 
 co_store_context:
   mov r10, argv0
