@@ -38,6 +38,8 @@
 
 // clang-format on
 
+#define CO_MINIMAL_STACK_SIZE 0x4000
+
 typedef struct co_task_context_s
 {
   co_uint ax;
@@ -136,15 +138,17 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   register co_task_t* task = (co_task_t*)co_calloc (sizeof (co_task_t));
   register co_task_t* last = threadCtx.task_last;
 
+  stackSize = co_max (stackSize, CO_MINIMAL_STACK_SIZE) & 0xFFFFFFFFFFFFFFF0;
+
   task->prev               = last;
   task->next               = threadCtx.task_head;
   task->stack              = co_calloc (stackSize);
   task->ctx.argv0          = (co_uint)data;
   task->ctx.ip             = (co_uint)func;
-  task->ctx.sp             = (((co_uint)task->stack) + stackSize - 8) & 0xFFFFFFFFFFFFFFE8; // 为兼容苹果，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍，0xE8由此而来.
+  task->ctx.sp             = (((co_uint)task->stack) + stackSize - 16) & 0xFFFFFFFFFFFFFFE8; // 为兼容苹果，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍，0xE8由此而来.
   *((co_int*)task->ctx.sp) = (co_uint)co_exited;
-
-  threadCtx.task_last = last->next = task;
+  last->next               = task;
+  threadCtx.task_last      = task;
 
   return 0;
 }

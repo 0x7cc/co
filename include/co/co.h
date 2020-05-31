@@ -72,6 +72,9 @@ static_assert (sizeof (co_int64) == 8, "");
 
 // clang-format on
 
+#define co_max(a, b) (((a) > (b)) ? (a) : (b))
+#define co_min(a, b) (((a) < (b)) ? (a) : (b))
+
 typedef void (*co_func) (void* data);
 
 /**

@@ -19,7 +19,7 @@ void coroutine_1 (void* data)
   for (int i = 0; i < 3; ++i)
   {
     printf ("coroutine_1 : i = %d, data = %p\n", i, data);
-    co_add (coroutine_3, 0, 0x1000);
+    co_add (coroutine_3, 0, 0);
     co_yield();
   }
 }
@@ -36,16 +36,16 @@ void coroutine_2 (void* data)
 void work (void* a)
 {
   co_enable ();
-  co_add (coroutine_1, (void*)0x1111, 0x4000);
-  co_add (coroutine_2, (void*)0x2222, 0x4000);
+  co_add (coroutine_1, (void*)0x1111, 0);
+  co_add (coroutine_2, (void*)0x2222, 0);
   co_wait ();
 }
 
 void work2 (void* a)
 {
   co_enable ();
-  co_add (coroutine_1, (void*)0x3333, 0x4000);
-  co_add (coroutine_2, (void*)0x4444, 0x4000);
+  co_add (coroutine_1, (void*)0x3333, 0);
+  co_add (coroutine_2, (void*)0x4444, 0);
   co_wait ();
 }
 
