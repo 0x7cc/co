@@ -36,6 +36,10 @@
   #error "目前只支持64位格式的fastcall"
 #endif
 
+#define CO_TASK_STATUS_READY       ((co_int)1 << 0)
+#define CO_TASK_STATUS_INTERRUPTED ((co_int)1 << 1)
+#define CO_TASK_STATUS_COMPLETED   ((co_int)1 << 2)
+
 // clang-format on
 
 #define CO_MINIMAL_STACK_SIZE 0x4000
@@ -118,7 +122,7 @@ extern co_int co_load_context (co_task_context_t* ctx);
  */
 static void co_exited ()
 {
-  threadCtx.task_current->status = -1;
+  threadCtx.task_current->status = CO_TASK_STATUS_COMPLETED;
   co_yield ();
 }
 
@@ -145,6 +149,7 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   task->stack     = co_calloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.ip    = (co_uint)func;
+  task->status    = CO_TASK_STATUS_READY;
 
   // Windows: 经测试，Windows平台需要16bytes栈底空间，否则会发生堆溢出问题，原因不详.
   // macOS: 根据苹果官方文档，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍.See: https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/130-IA-32_Function_Calling_Conventions/IA32.html
@@ -178,7 +183,7 @@ co_int co_yield ()
   }
 
   register co_task_t* prev = threadCtx.task_current->prev;
-  if (prev->status == -1)
+  if (prev->status & (CO_TASK_STATUS_INTERRUPTED | CO_TASK_STATUS_COMPLETED))
   {
     if (prev == threadCtx.task_last)
       threadCtx.task_last = prev->prev;
