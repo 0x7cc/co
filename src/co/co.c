@@ -182,6 +182,8 @@ co_int co_run ()
 
     task = next;
   }
+  
+  co_free (threadCtx.task_head);
 
   return 0;
 }
