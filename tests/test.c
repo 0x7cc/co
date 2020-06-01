@@ -53,9 +53,9 @@ int main (int argc, char* argv[])
 {
   co_int tid[2];
   tid[0] = co_thread_create (work, 0);
-  // tid[1] = co_thread_create (work2, 0);
+  tid[1] = co_thread_create (work2, 0);
 
   co_thread_join (tid[0]);
-  // co_thread_join (tid[1]);
+  co_thread_join (tid[1]);
   return 0;
 }
