@@ -1,5 +1,6 @@
 bits 64
 
+global co_atomic_get
 global co_atomic_set
 global co_atomic_inc
 global co_atomic_dec
@@ -57,6 +58,10 @@ struc co_context
 endstruc
 
 section .text
+
+co_atomic_get:
+  xchg rax, qword [argv0]
+  ret
 
 co_atomic_set:
   xchg qword [argv0], argv1
