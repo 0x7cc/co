@@ -119,7 +119,7 @@ extern co_int co_load_context (co_task_context_t* ctx);
 static void co_exited ()
 {
   threadCtx.task_current->status = -1;
-  co_load_context (&(threadCtx.task_head->ctx));
+  co_yield ();
 }
 
 co_int co_enable ()
@@ -140,16 +140,17 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
 
   stackSize = co_max (stackSize, CO_MINIMAL_STACK_SIZE) & 0xFFFFFFFFFFFFFFF0;
 
-  task->prev               = last;
-  task->next               = threadCtx.task_head;
-  task->stack              = co_calloc (stackSize);
-  task->ctx.argv0          = (co_uint)data;
-  task->ctx.ip             = (co_uint)func;
+  task->prev      = last;
+  task->next      = threadCtx.task_head;
+  task->stack     = co_calloc (stackSize);
+  task->ctx.argv0 = (co_uint)data;
+  task->ctx.ip    = (co_uint)func;
 
   // Windows: 经测试，Windows平台需要16bytes栈底空间，否则会发生堆溢出问题，原因不详.
   // macOS: 根据苹果官方文档，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍.See: https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/130-IA-32_Function_Calling_Conventions/IA32.html
   task->ctx.sp             = ((((co_uint)task->stack) + stackSize - 16) & 0xFFFFFFFFFFFFFFF0) - 8;
   *((co_int*)task->ctx.sp) = (co_uint)co_exited;
+  last->next->prev         = task;
   last->next               = task;
   threadCtx.task_last      = task;
 
@@ -158,31 +159,11 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
 
 co_int co_run ()
 {
-  register co_task_t* task = threadCtx.task_head->next;
+  threadCtx.task_current = threadCtx.task_head;
 
   while (threadCtx.task_last != threadCtx.task_head)
-  {
-    threadCtx.task_current = task;
-    co_swap_context (&(threadCtx.task_head->ctx), &(task->ctx));
+    co_yield ();
 
-    register co_task_t* next = task->next;
-    if (next == threadCtx.task_head)
-      next = next->next;
-
-    if (task->status == -1)
-    {
-      if (task == threadCtx.task_last)
-        threadCtx.task_last = task->prev;
-
-      task->prev->next = task->next;
-      task->next->prev = task->prev;
-      co_free (task->stack);
-      co_free (task);
-    }
-
-    task = next;
-  }
-  
   co_free (threadCtx.task_head);
 
   return 0;
@@ -190,7 +171,24 @@ co_int co_run ()
 
 co_int co_yield ()
 {
-  co_swap_context (&(threadCtx.task_current->ctx), &(threadCtx.task_head->ctx));
+  {
+    register co_task_t* task = threadCtx.task_current;
+    threadCtx.task_current   = task->next;
+    co_swap_context (&(task->ctx), &(task->next->ctx));
+  }
+
+  register co_task_t* prev = threadCtx.task_current->prev;
+  if (prev->status == -1)
+  {
+    if (prev == threadCtx.task_last)
+      threadCtx.task_last = prev->prev;
+
+    prev->prev->next = prev->next;
+    prev->next->prev = prev->prev;
+    co_free (prev->stack);
+    co_free (prev);
+  }
+
   return 0;
 }
 
