@@ -1,7 +1,7 @@
 bits 64
 
-globaL co_atomic_set
-globaL co_atomic_inc
+global co_atomic_set
+global co_atomic_inc
 global co_atomic_dec
 global co_atomic_add
 global co_atomic_sub
