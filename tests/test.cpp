@@ -5,16 +5,17 @@
 #include "co/co.h"
 #include <stdio.h>
 
-void coroutine_3 (void* data)
+void* coroutine_3 (void* data)
 {
   for (int i = 0; i < 3; i++)
   {
     printf ("coroutine_3 : %d\n", i);
     co_thread_yield ();
   }
+  return nullptr;
 }
 
-void coroutine_1 (void* data)
+void* coroutine_1 (void* data)
 {
   for (int i = 0; i < 10000; ++i)
   {
@@ -22,31 +23,35 @@ void coroutine_1 (void* data)
     co_task_add (coroutine_3, 0, 0);
   }
   // co_yield ();
+  return nullptr;
 }
 
-void coroutine_2 (void* data)
+void* coroutine_2 (void* data)
 {
-  for (register int i = 0; i < 3; ++i)
+  for (int i = 0; i < 3; ++i)
   {
     printf ("coroutine_2 : i = %d, data = %p\n", i, data);
     co_thread_yield ();
   }
+  return nullptr;
 }
 
-void work (void* a)
+void* work (void* a)
 {
   co_thread_init ();
   co_task_add (coroutine_1, (void*)0x1111, 0);
   co_task_add (coroutine_2, (void*)0x2222, 0);
   co_thread_run ();
+  return nullptr;
 }
 
-void work2 (void* a)
+void* work2 (void* a)
 {
   co_thread_init ();
   co_task_add (coroutine_1, (void*)0x3333, 0);
   co_task_add (coroutine_2, (void*)0x4444, 0);
   co_thread_run ();
+  return nullptr;
 }
 
 int main (int argc, char* argv[])
