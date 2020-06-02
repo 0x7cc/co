@@ -25,6 +25,10 @@ void* coroutine_1 (void* data)
   co_thread_yield ();
   return nullptr;
 }
+void* coroutine_4 (void* data)
+{
+  return 0x9876;
+}
 
 void* coroutine_2 (void* data)
 {
@@ -33,6 +37,7 @@ void* coroutine_2 (void* data)
     printf ("coroutine_2 : i = %d, data = %p\n", i, data);
     co_thread_yield ();
   }
+  printf ("coroutine_4 return : 0x%x\n", co_task_await (co_task_add (coroutine_4, NULL, 0)));
   return nullptr;
 }
 

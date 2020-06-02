@@ -70,6 +70,7 @@ typedef struct co_task_s
   struct co_task_s* prev;
   struct co_task_s* next;
   void*             stack;
+  void*             result;
   co_int            status;
   co_task_context_t ctx;
 } co_task_t;
@@ -117,13 +118,16 @@ extern co_int co_store_context (co_task_context_t* ctx);
  */
 extern co_int co_load_context (co_task_context_t* ctx);
 
+extern co_int co_exited_asm ();
+
 /**
  * 携程执行结束返回时的处理函数
  */
-static void co_exited ()
+void co_exited (void* result)
 {
   co_thread_context_t* threadCtx  = co_tls_get (thread_ctx_tls_key);
   threadCtx->task_current->status = CO_TASK_STATUS_COMPLETED;
+  threadCtx->task_current->result = result;
   co_thread_yield ();
 }
 
@@ -178,7 +182,7 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
   // Windows: 经测试，Windows平台需要32-byte栈底空间，否则会发生堆溢出问题，原因不详.
   // macOS: 根据苹果官方文档，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍.See: https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/130-IA-32_Function_Calling_Conventions/IA32.html
   task->ctx.sp             = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 8;
-  *((co_int*)task->ctx.sp) = (co_uint)co_exited;
+  *((co_int*)task->ctx.sp) = (co_uint)co_exited_asm;
   last->next->prev         = task;
   last->next               = task;
   threadCtx->task_last     = task;
@@ -196,7 +200,11 @@ void* co_task_await (co_task_t* task)
 {
   while ((task->status & (CO_TASK_STATUS_COMPLETED | CO_TASK_STATUS_INTERRUPTED)) == 0)
     co_thread_yield ();
-  return (void*)task->ctx.ax;
+
+  if (task->status & CO_TASK_STATUS_COMPLETED)
+    return (void*)task->result;
+
+  return nullptr;
 }
 
 co_int co_thread_run ()
