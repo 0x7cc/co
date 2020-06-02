@@ -176,23 +176,26 @@ co_int co_run ()
 
 co_int co_yield ()
 {
+  register co_task_t* const task = threadCtx.task_current;
+  register co_task_t*       next = task->next;
+
+  while (next->status & (CO_TASK_STATUS_INTERRUPTED | CO_TASK_STATUS_COMPLETED))
   {
-    register co_task_t* task = threadCtx.task_current;
-    threadCtx.task_current   = task->next;
-    co_swap_context (&(task->ctx), &(task->next->ctx));
+    co_task_t* t = next;
+    next         = next->next;
+
+    if (t == threadCtx.task_last)
+      threadCtx.task_last = t->prev;
+
+    t->prev->next = t->next;
+    t->next->prev = t->prev;
+    co_free (t->stack);
+    co_free (t);
   }
 
-  register co_task_t* prev = threadCtx.task_current->prev;
-  if (prev->status & (CO_TASK_STATUS_INTERRUPTED | CO_TASK_STATUS_COMPLETED))
-  {
-    if (prev == threadCtx.task_last)
-      threadCtx.task_last = prev->prev;
+  threadCtx.task_current = next;
 
-    prev->prev->next = prev->next;
-    prev->next->prev = prev->prev;
-    co_free (prev->stack);
-    co_free (prev);
-  }
+  co_swap_context (&(task->ctx), &(next->ctx));
 
   return 0;
 }
