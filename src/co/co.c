@@ -151,9 +151,9 @@ co_int co_add (co_func func, void* data, co_uint stackSize)
   task->ctx.ip    = (co_uint)func;
   task->status    = CO_TASK_STATUS_READY;
 
-  // Windows: 经测试，Windows平台需要16bytes栈底空间，否则会发生堆溢出问题，原因不详.
+  // Windows: 经测试，Windows平台需要32-byte栈底空间，否则会发生堆溢出问题，原因不详.
   // macOS: 根据苹果官方文档，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍.See: https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/130-IA-32_Function_Calling_Conventions/IA32.html
-  task->ctx.sp             = ((((co_uint)task->stack) + stackSize - 16) & 0xFFFFFFFFFFFFFFF0) - 8;
+  task->ctx.sp             = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 8;
   *((co_int*)task->ctx.sp) = (co_uint)co_exited;
   last->next->prev         = task;
   last->next               = task;
