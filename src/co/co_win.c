@@ -31,4 +31,24 @@ co_int co_thread_join (co_int tid)
   return WaitForSingleObject ((HANDLE)tid, INFINITE);
 }
 
+void co_tls_init (co_int* key)
+{
+  *key = TlsAlloc ();
+}
+
+void co_tls_cleanup (co_int key)
+{
+  TlsFree (key);
+}
+
+void* co_tls_get (co_int key)
+{
+  return TlsGetValue (key);
+}
+
+void co_tls_set (co_int key, void* value)
+{
+  TlsSetValue (key, value);
+}
+
 #endif // WIN32

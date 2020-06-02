@@ -75,34 +75,45 @@ static_assert (sizeof (co_int64) == 8, "");
 #define co_max(a, b) (((a) > (b)) ? (a) : (b))
 #define co_min(a, b) (((a) < (b)) ? (a) : (b))
 
+typedef struct co_task_s co_task_t;
+
 typedef void (*co_func) (void* data);
+
+/**
+ * co_global_init
+ * @return
+ */
+CO_API co_int co_global_init ();
+
+/**
+ * co_global_cleanup
+ * @return
+ */
+CO_API co_int co_global_cleanup ();
 
 /**
  * 在一个线程中启用协程功能
  * @return
  */
-CO_API co_int co_enable ();
+CO_API co_int co_thread_init ();
 
 /**
- * 在当前线程中添加一个协程
- * @param func      协程的入口函数
- * @param data      func执行时的参数
- * @param stackSize 分配给该协程的栈大小
+ * co_thread_cleanup
  * @return
  */
-CO_API co_int co_add (co_func func, void* data, co_uint stackSize);
+CO_API co_int co_thread_cleanup ();
 
 /**
  * 等待所有协程执行完毕
  * @return
  */
-CO_API co_int co_run ();
+CO_API co_int co_thread_run ();
 
 /**
  * 让出执行权
  * @return
  */
-CO_API co_int co_yield ();
+CO_API co_int co_thread_yield ();
 
 /**
  * 创建线程
@@ -118,6 +129,29 @@ CO_API co_int co_thread_create (co_func func, void* data);
  * @return
  */
 CO_API co_int co_thread_join (co_int tid);
+
+/**
+ * 在当前线程中添加一个协程
+ * @param func      协程的入口函数
+ * @param data      func执行时的参数
+ * @param stackSize 分配给该协程的栈大小
+ * @return
+ */
+CO_API co_task_t* co_task_add (co_func func, void* data, co_uint stackSize);
+
+/**
+ * 中断并删除一个协程
+ * @param task      协程
+ * @return
+ */
+CO_API co_int co_task_del (co_task_t* task);
+
+/**
+ * 等待一个协程结束，并获取返回值.
+ * @param task      协程
+ * @return
+ */
+CO_API void* co_task_await (co_task_t* task);
 
 /**
  * malloc
@@ -145,5 +179,10 @@ CO_API void    co_atomic_inc (co_uint* mem);
 CO_API void    co_atomic_dec (co_uint* mem);
 CO_API void    co_atomic_add (co_uint* mem, co_uint value);
 CO_API void    co_atomic_sub (co_uint* mem, co_uint value);
+
+CO_API void  co_tls_init (co_int* key);
+CO_API void  co_tls_cleanup (co_int key);
+CO_API void* co_tls_get (co_int key);
+CO_API void  co_tls_set (co_int key, void* value);
 
 #endif
