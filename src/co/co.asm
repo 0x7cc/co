@@ -10,7 +10,6 @@ global co_store_context
 global co_load_context
 global co_swap_context
 global co_exited_asm
-extern co_exited
 
 %define elf64_fastcall_argv0 rdi
 %define elf64_fastcall_argv1 rsi
@@ -185,5 +184,5 @@ co_swap_context:
   ret
 
 co_exited_asm:
-  mov argv0, rax
-  jmp co_exited
+  mov argv0, rax   ; 保存协程返回值.
+  jmp qword [rsp]  ; 跳转到c语言函数处理协程结束事件.

@@ -9,7 +9,7 @@ co_int tls_key_thread_ctx;
 /**
  * 携程执行结束返回时的处理函数
  */
-void co_exited (void* result)
+static void co_exited (void* result)
 {
   co_thread_context_t* threadCtx  = co_tls_get (tls_key_thread_ctx);
   threadCtx->task_current->status = CO_TASK_STATUS_COMPLETED;
@@ -69,11 +69,12 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
 
   // Windows: 经测试，Windows平台需要32-byte栈底空间，否则会发生堆溢出问题，原因不详.
   // macOS: 根据苹果官方文档，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍.See: https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/130-IA-32_Function_Calling_Conventions/IA32.html
-  task->ctx.sp             = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 8;
-  *((co_int*)task->ctx.sp) = (co_uint)co_exited_asm;
-  last->next->prev         = task;
-  last->next               = task;
-  threadCtx->task_last     = task;
+  task->ctx.sp                    = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 24;
+  *((co_uint*)(task->ctx.sp + 8)) = (co_uint)co_exited;
+  *((co_uint*)(task->ctx.sp))     = (co_uint)co_exited_asm;
+  last->next->prev                = task;
+  last->next                      = task;
+  threadCtx->task_last            = task;
 
   ++threadCtx->num_of_coroutines;
 
