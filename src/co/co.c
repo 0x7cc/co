@@ -20,14 +20,12 @@ void co_exited (void* result)
 co_int co_init ()
 {
   co_tls_init (&tls_key_thread_ctx);
-  co_thread_init ();
   co_init_hooks ();
   return 0;
 }
 
 void co_cleanup ()
 {
-  co_thread_cleanup ();
   co_tls_cleanup (tls_key_thread_ctx);
   tls_key_thread_ctx = 0;
 }
