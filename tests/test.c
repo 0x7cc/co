@@ -3,8 +3,6 @@
 //
 
 #include "co/co.h"
-#define _GNU_SOURCE 1
-#include <dlfcn.h>
 #include <stdio.h>
 
 void* coroutine_3 (void* data)
