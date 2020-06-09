@@ -12,7 +12,8 @@ static DWORD WINAPI thread_start_routine (LPVOID lpThreadParameter)
   co_thread_init ();
 
   ctx->func (ctx->data);
-  co_thread_run ();
+
+  co_run ();
 
   co_thread_cleanup ();
 

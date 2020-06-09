@@ -26,6 +26,7 @@ static void* thread_start_routine (void* data)
   co_thread_init ();
 
   ctx->func (ctx->data);
+
   co_run ();
 
   co_thread_cleanup ();
