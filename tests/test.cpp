@@ -3,7 +3,7 @@
 //
 
 #include "co/co.h"
-#include <stdio.h>
+#include <iostream>
 #include <thread>
 
 void* coroutine_3 (void* data)
