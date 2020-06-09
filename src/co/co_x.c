@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 typedef int (*sys_puts_t) (const char* s);
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
@@ -75,12 +76,20 @@ void co_tls_set (co_int key, void* value)
 
 ssize_t recv (int sockfd, void* buf, size_t len, int flags)
 {
+  {
+    int flags = fcntl (sockfd, F_GETFL, 0);
+    fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
+  }
   co_yield_ ();
   return hooks.sys_recv (sockfd, buf, len, flags);
 }
 
 ssize_t send (int sockfd, const void* buf, size_t len, int flags)
 {
+  {
+    int flags = fcntl (sockfd, F_GETFL, 0);
+    fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
+  }
   co_yield_ ();
   return hooks.sys_send (sockfd, buf, len, flags);
 }
