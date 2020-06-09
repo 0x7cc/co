@@ -2,19 +2,22 @@
 #if _WIN32
 
 #include "co/co.h"
+#include "co/co_private.h"
 #include <windows.h>
-
-typedef struct
-{
-  co_func func;
-  void*   data;
-} threadCtx;
 
 static DWORD WINAPI thread_start_routine (LPVOID lpThreadParameter)
 {
   threadCtx* ctx = (threadCtx*)lpThreadParameter;
+
+  co_thread_init ();
+
   ctx->func (ctx->data);
+  co_thread_run ();
+
+  co_thread_cleanup ();
+
   co_free (ctx);
+
   return 0;
 }
 
@@ -49,6 +52,10 @@ void* co_tls_get (co_int key)
 void co_tls_set (co_int key, void* value)
 {
   TlsSetValue (key, value);
+}
+
+void co_init_hooks ()
+{
 }
 
 #endif // WIN32

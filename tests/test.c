@@ -3,6 +3,8 @@
 //
 
 #include "co/co.h"
+#define _GNU_SOURCE 1
+#include <dlfcn.h>
 #include <stdio.h>
 
 void* coroutine_3 (void* data)
@@ -10,7 +12,7 @@ void* coroutine_3 (void* data)
   for (int i = 0; i < 3; i++)
   {
     printf ("coroutine_3 : %d\n", i);
-    co_thread_yield ();
+    co_yield_ ();
   }
   return nullptr;
 }
@@ -22,12 +24,12 @@ void* coroutine_1 (void* data)
     printf ("coroutine_1 : i = %d, data = %p\n", i, data);
     co_task_add (coroutine_3, 0, 0);
   }
-  co_thread_yield ();
+  co_yield_ ();
   return nullptr;
 }
 void* coroutine_4 (void* data)
 {
-  return 0x9876;
+  return (void*)0x9876;
 }
 
 void* coroutine_2 (void* data)
@@ -35,28 +37,23 @@ void* coroutine_2 (void* data)
   for (register int i = 0; i < 3; ++i)
   {
     printf ("coroutine_2 : i = %d, data = %p\n", i, data);
-    co_thread_yield ();
+    co_yield_ ();
   }
-  printf ("coroutine_4 return : 0x%x\n", co_task_await (co_task_add (coroutine_4, NULL, 0)));
+  printf ("coroutine_4 return : 0x%p\n", co_task_await (co_task_add (coroutine_4, NULL, 0)));
   return nullptr;
 }
 
 void* work (void* a)
 {
-  co_thread_init ();
   co_task_add (coroutine_1, (void*)0x1111, 0);
   co_task_add (coroutine_2, (void*)0x2222, 0);
-  co_thread_run ();
   return nullptr;
 }
 
 void* work2 (void* a)
 {
-  co_thread_init ();
   co_task_add (coroutine_1, (void*)0x3333, 0);
   co_task_add (coroutine_2, (void*)0x4444, 0);
-  co_thread_run ();
-  co_thread_cleanup ();
   return nullptr;
 }
 
@@ -64,15 +61,16 @@ int main (int argc, char* argv[])
 {
   co_int tid[2];
 
-  co_global_init ();
+  co_init ();
+  puts ("aaa");
 
-  tid[0] = co_thread_create (work, 0);
-  tid[1] = co_thread_create (work2, 0);
+  tid[0] = co_thread_create (work, nullptr);
+  tid[1] = co_thread_create (work2, nullptr);
 
   co_thread_join (tid[0]);
   co_thread_join (tid[1]);
 
-  co_global_cleanup ();
+  co_cleanup ();
 
   return 0;
 }

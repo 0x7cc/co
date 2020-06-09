@@ -1,172 +1,62 @@
 
 #include "co/co.h"
+#include "co/co_private.h"
 #include <string.h>
 #include <stdlib.h>
 
-// clang-format off
-
-#define elf64_fastcall_argv0 di
-#define elf64_fastcall_argv1 si
-#define elf64_fastcall_argv2 dx
-#define elf64_fastcall_argv3 cx
-
-#define win64_fastcall_argv0 cx
-#define win64_fastcall_argv1 dx
-#define win64_fastcall_argv2 r8
-#define win64_fastcall_argv3 r9
-
-#if __x86_64__ || _WIN64
-  #if __linux__
-    #define argv0 elf64_fastcall_argv0
-    #define argv1 elf64_fastcall_argv1
-    #define argv2 elf64_fastcall_argv2
-    #define argv3 elf64_fastcall_argv3
-  #elif __APPLE__
-    #define argv0 elf64_fastcall_argv0
-    #define argv1 elf64_fastcall_argv1
-    #define argv2 elf64_fastcall_argv2
-    #define argv3 elf64_fastcall_argv3
-  #elif _WIN64
-    #define argv0 win64_fastcall_argv0
-    #define argv1 win64_fastcall_argv1
-    #define argv2 win64_fastcall_argv2
-    #define argv3 win64_fastcall_argv3
-  #endif
-#else
-  #error "目前只支持64位格式的fastcall"
-#endif
-
-#define CO_TASK_STATUS_READY       ((co_int)1 << 0)
-#define CO_TASK_STATUS_INTERRUPTED ((co_int)1 << 1)
-#define CO_TASK_STATUS_COMPLETED   ((co_int)1 << 2)
-
-// clang-format on
-
-#define CO_MINIMAL_STACK_SIZE 0x4000
-
-typedef struct co_task_context_s
-{
-  co_uint ax;
-  co_uint bx;
-  co_uint cx;
-  co_uint dx;
-  co_uint si;
-  co_uint di;
-  co_uint sp;
-  co_uint bp;
-  co_uint ip;
-#if __x86_64__ || _WIN64
-  co_uint64 r8;
-  co_uint64 r9;
-  co_uint64 r12;
-  co_uint64 r13;
-  co_uint64 r14;
-  co_uint64 r15;
-#endif
-} co_task_context_t;
-
-typedef struct co_task_s
-{
-  struct co_task_s* prev;
-  struct co_task_s* next;
-  void*             stack;
-  void*             result;
-  co_int            status;
-  co_task_context_t ctx;
-} co_task_t;
-
-typedef struct co_thread_context_s
-{
-  /***
-   * 循环链表的头节点
-   */
-  co_task_t* task_head;
-
-  /**
-   * 尾指针，方便快速添加新协程
-   */
-  co_task_t* task_last;
-
-  /**
-   * 当前运行的任务指针
-   */
-  co_task_t* task_current;
-} co_thread_context_t;
-
-/**
- * 这个变量在每个线程中的地址都应该不同.
- */
-static co_int thread_ctx_tls_key;
-
-/**
- * 切换上下文(由汇编实现)
- * @param store    协程的context
- * @param load     协程的context
- * @return
- */
-extern co_int co_swap_context (co_task_context_t* store, co_task_context_t* load);
-
-/**
- * 保存上下文.(由汇编实现)
- * @return
- */
-extern co_int co_store_context (co_task_context_t* ctx);
-
-/**
- * 载入上下文, 执行过程中将会切换到其他协程.(由汇编实现)
- * @return
- */
-extern co_int co_load_context (co_task_context_t* ctx);
-
-extern co_int co_exited_asm ();
+co_int tls_key_thread_ctx;
 
 /**
  * 携程执行结束返回时的处理函数
  */
 void co_exited (void* result)
 {
-  co_thread_context_t* threadCtx  = co_tls_get (thread_ctx_tls_key);
+  co_thread_context_t* threadCtx  = co_tls_get (tls_key_thread_ctx);
   threadCtx->task_current->status = CO_TASK_STATUS_COMPLETED;
   threadCtx->task_current->result = result;
-  co_thread_yield ();
+  co_yield_ ();
 }
 
-co_int co_global_init ()
+co_int co_init ()
 {
-  co_tls_init (&thread_ctx_tls_key);
+  co_tls_init (&tls_key_thread_ctx);
+  co_thread_init ();
+  co_init_hooks ();
   return 0;
 }
 
-co_int co_global_cleanup ()
+void co_cleanup ()
 {
-  co_tls_cleanup (thread_ctx_tls_key);
-  thread_ctx_tls_key = 0;
-  return 0;
+  co_thread_cleanup ();
+  co_tls_cleanup (tls_key_thread_ctx);
+  tls_key_thread_ctx = 0;
 }
 
-co_int co_thread_init ()
+void co_thread_init ()
 {
   co_thread_context_t* threadCtx = co_calloc (sizeof (co_thread_context_t));
-  co_tls_set (thread_ctx_tls_key, threadCtx);
+  co_tls_set (tls_key_thread_ctx, threadCtx);
 
   threadCtx->task_head = (co_task_t*)co_calloc (sizeof (co_task_t));
 
-  threadCtx->task_head->prev = threadCtx->task_head;
-  threadCtx->task_head->next = threadCtx->task_head;
-  threadCtx->task_last       = threadCtx->task_head;
-  return 0;
+  threadCtx->task_head->prev   = threadCtx->task_head;
+  threadCtx->task_head->next   = threadCtx->task_head;
+  threadCtx->task_last         = threadCtx->task_head;
+  threadCtx->task_current      = threadCtx->task_head;
+  threadCtx->num_of_coroutines = 0;
 }
 
-co_int co_thread_cleanup ()
+void co_thread_cleanup ()
 {
-  co_free (co_tls_get (thread_ctx_tls_key));
-  co_tls_set (thread_ctx_tls_key, NULL);
-  return 0;
+  co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
+  co_free (threadCtx->task_head);
+  co_free (threadCtx);
+  co_tls_set (tls_key_thread_ctx, NULL);
 }
 
 co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
 {
-  co_thread_context_t* threadCtx = co_tls_get (thread_ctx_tls_key);
+  co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
   register co_task_t*  task      = (co_task_t*)co_calloc (sizeof (co_task_t));
   register co_task_t*  last      = threadCtx->task_last;
 
@@ -187,19 +77,20 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
   last->next               = task;
   threadCtx->task_last     = task;
 
+  ++threadCtx->num_of_coroutines;
+
   return task;
 }
 
-co_int co_task_del (co_task_t* task)
+void co_task_del (co_task_t* task)
 {
   task->status |= CO_TASK_STATUS_INTERRUPTED;
-  return 0;
 }
 
 void* co_task_await (co_task_t* task)
 {
   while ((task->status & (CO_TASK_STATUS_COMPLETED | CO_TASK_STATUS_INTERRUPTED)) == 0)
-    co_thread_yield ();
+    co_yield_ ();
 
   if (task->status & CO_TASK_STATUS_COMPLETED)
     return (void*)task->result;
@@ -207,22 +98,17 @@ void* co_task_await (co_task_t* task)
   return nullptr;
 }
 
-co_int co_thread_run ()
+void co_thread_run ()
 {
-  co_thread_context_t* threadCtx = co_tls_get (thread_ctx_tls_key);
-  threadCtx->task_current        = threadCtx->task_head;
+  co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
 
-  while (threadCtx->task_last != threadCtx->task_head)
-    co_thread_yield ();
-
-  co_free (threadCtx->task_head);
-
-  return 0;
+  while (threadCtx->num_of_coroutines)
+    co_yield_ ();
 }
 
-co_int co_thread_yield ()
+void co_yield_ ()
 {
-  co_thread_context_t*      threadCtx = co_tls_get (thread_ctx_tls_key);
+  co_thread_context_t*      threadCtx = co_tls_get (tls_key_thread_ctx);
   register co_task_t* const task      = threadCtx->task_current;
   register co_task_t*       next      = task->next;
 
@@ -238,13 +124,13 @@ co_int co_thread_yield ()
     t->next->prev = t->prev;
     co_free (t->stack);
     co_free (t);
+
+    --threadCtx->num_of_coroutines;
   }
 
   threadCtx->task_current = next;
 
   co_swap_context (&(task->ctx), &(next->ctx));
-
-  return 0;
 }
 
 void* co_alloc (co_uint size)

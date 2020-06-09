@@ -47,11 +47,12 @@ endif ()
 
 add_library ( co
   STATIC
+  ${NASM_OBJ}
   include/co/co.h
+  include/co/co_private.h
   src/co/co.c
   src/co/co_win.c
   src/co/co_x.c
-  ${NASM_OBJ}
   )
 
 target_include_directories ( co
@@ -60,7 +61,7 @@ target_include_directories ( co
   )
 
 if ( CMAKE_HOST_UNIX )
-  target_link_libraries ( co PUBLIC pthread )
+  target_link_libraries ( co PUBLIC pthread dl )
 endif ()
 
 #if ( MSVC )

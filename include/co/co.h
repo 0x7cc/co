@@ -77,40 +77,22 @@ typedef struct co_task_s co_task_t;
 typedef void* (*co_func) (void* data);
 
 /**
- * co_global_init
+ * co_init
  * @return
  */
-CO_API co_int co_global_init ();
+CO_API co_int co_init ();
 
 /**
- * co_global_cleanup
+ * co_cleanup
  * @return
  */
-CO_API co_int co_global_cleanup ();
-
-/**
- * 在一个线程中启用协程功能
- * @return
- */
-CO_API co_int co_thread_init ();
-
-/**
- * co_thread_cleanup
- * @return
- */
-CO_API co_int co_thread_cleanup ();
-
-/**
- * 等待所有协程执行完毕
- * @return
- */
-CO_API co_int co_thread_run ();
+CO_API void co_cleanup ();
 
 /**
  * 让出执行权
  * @return
  */
-CO_API co_int co_thread_yield ();
+CO_API void co_yield_ ();
 
 /**
  * 创建线程
@@ -141,7 +123,7 @@ CO_API co_task_t* co_task_add (co_func func, void* data, co_uint stackSize);
  * @param task      协程
  * @return
  */
-CO_API co_int co_task_del (co_task_t* task);
+CO_API void co_task_del (co_task_t* task);
 
 /**
  * 等待一个协程结束，并获取返回值.
