@@ -69,12 +69,12 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
 
   // Windows: 经测试，Windows平台需要32-byte栈底空间，否则会发生堆溢出问题，原因不详.
   // macOS: 根据苹果官方文档，这里理应是16-byte对齐，但我的切换context是用jmp做跳转，没有call的压栈操作，所以这里就要是8的单数倍.See: https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/130-IA-32_Function_Calling_Conventions/IA32.html
-  task->ctx.sp                    = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 24;
-  *((co_uint*)(task->ctx.sp + 8)) = (co_uint)co_exited;
-  *((co_uint*)(task->ctx.sp))     = (co_uint)co_exited_asm;
-  last->next->prev                = task;
-  last->next                      = task;
-  threadCtx->task_last            = task;
+  task->ctx.sp                     = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 8;
+  *((co_uint*)(task->ctx.sp + 16)) = (co_uint)co_exited; // 玛德智障MSVC，函数中的参数居然会保存到当前函数栈之外(rsp + xxx).由于我只使用了一个参数,所以只被占用了rsp+8 位置的8个字节.
+  *((co_uint*)(task->ctx.sp))      = (co_uint)co_exited_asm;
+  last->next->prev                 = task;
+  last->next                       = task;
+  threadCtx->task_last             = task;
 
   ++threadCtx->num_of_coroutines;
 
