@@ -60,7 +60,6 @@ int main (int argc, char* argv[])
   co_int tid[2];
 
   co_init ();
-  puts ("aaa");
 
   tid[0] = co_thread_create (work, nullptr);
   tid[1] = co_thread_create (work2, nullptr);

@@ -60,6 +60,7 @@ void* work2 (void* a)
 int main (int argc, char* argv[])
 {
   co_init ();
+  co_thread_init ();
 
   std::thread t1 (work, nullptr);
   std::thread t2 (work2, nullptr);
@@ -67,6 +68,8 @@ int main (int argc, char* argv[])
   t1.join ();
   t2.join ();
 
+  co_run ();
+  co_thread_cleanup ();
   co_cleanup ();
 
   return 0;

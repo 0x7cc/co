@@ -87,6 +87,19 @@ target_link_libraries ( testc PUBLIC co )
 
 #####################################
 
+add_executable ( test_hiredis
+  tests/test_hiredis.c
+  )
+
+target_include_directories ( test_hiredis
+  PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  )
+
+target_link_libraries ( test_hiredis PUBLIC co hiredis )
+
+#####################################
+
 add_executable ( testcpp
   tests/test.cpp
   )
