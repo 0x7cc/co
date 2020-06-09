@@ -95,6 +95,12 @@ CO_API void co_cleanup ();
 CO_API void co_yield_ ();
 
 /**
+ * 等待所有协程执行完毕
+ * @return
+ */
+CO_API void co_run ();
+
+/**
  * 创建线程
  * @param func
  * @param data
@@ -108,6 +114,18 @@ CO_API co_int co_thread_create (co_func func, void* data);
  * @return
  */
 CO_API co_int co_thread_join (co_int tid);
+
+/**
+ * 在一个非co_thread_create函数创建的线程中启用协程功能
+ * @return
+ */
+CO_API void co_thread_init ();
+
+/**
+ * 在一个非co_thread_create函数创建的线程中
+ * @return
+ */
+CO_API void co_thread_cleanup ();
 
 /**
  * 在当前线程中添加一个协程

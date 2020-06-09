@@ -4,6 +4,7 @@
 
 #include "co/co.h"
 #include <stdio.h>
+#include <thread>
 
 void* coroutine_3 (void* data)
 {
@@ -38,29 +39,33 @@ void* coroutine_2 (void* data)
 
 void* work (void* a)
 {
+  co_thread_init ();
   co_task_add (coroutine_1, (void*)0x1111, 0);
   co_task_add (coroutine_2, (void*)0x2222, 0);
+  co_run ();
+  co_thread_cleanup ();
   return nullptr;
 }
 
 void* work2 (void* a)
 {
+  co_thread_init ();
   co_task_add (coroutine_1, (void*)0x3333, 0);
   co_task_add (coroutine_2, (void*)0x4444, 0);
+  co_run ();
+  co_thread_cleanup ();
   return nullptr;
 }
 
 int main (int argc, char* argv[])
 {
-  co_int tid[2];
-
   co_init ();
 
-  tid[0] = co_thread_create (work, nullptr);
-  tid[1] = co_thread_create (work2, nullptr);
+  std::thread t1 (work, nullptr);
+  std::thread t2 (work2, nullptr);
 
-  co_thread_join (tid[0]);
-  co_thread_join (tid[1]);
+  t1.join ();
+  t2.join ();
 
   co_cleanup ();
 

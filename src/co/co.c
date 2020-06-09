@@ -98,7 +98,7 @@ void* co_task_await (co_task_t* task)
   return nullptr;
 }
 
-void co_thread_run ()
+void co_run ()
 {
   co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
 

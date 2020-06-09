@@ -37,9 +37,9 @@
   #error "目前只支持64位格式的fastcall"
 #endif
 
-#define CO_TASK_STATUS_READY       ((co_int)1 << 0)
-#define CO_TASK_STATUS_INTERRUPTED ((co_int)1 << 1)
-#define CO_TASK_STATUS_COMPLETED   ((co_int)1 << 2)
+#define CO_TASK_STATUS_READY       ((co_uint)1 << 0)
+#define CO_TASK_STATUS_INTERRUPTED ((co_uint)1 << 1)
+#define CO_TASK_STATUS_COMPLETED   ((co_uint)1 << 2)
 
 #define CO_MINIMAL_STACK_SIZE 0x4000
 
@@ -72,7 +72,7 @@ typedef struct co_task_s
   struct co_task_s* next;
   void*             stack;
   void*             result;
-  co_int            status;
+  co_uint           status;
   co_task_context_t ctx;
 } co_task_t;
 
@@ -128,24 +128,6 @@ extern void co_store_context (co_task_context_t* ctx);
 extern void co_load_context (co_task_context_t* ctx);
 
 extern void co_exited_asm ();
-
-/**
- * 在一个线程中启用协程功能
- * @return
- */
-extern void co_thread_init ();
-
-/**
- * co_thread_cleanup
- * @return
- */
-extern void co_thread_cleanup ();
-
-/**
- * 等待所有协程执行完毕
- * @return
- */
-extern void co_thread_run ();
 
 extern void co_init_hooks ();
 

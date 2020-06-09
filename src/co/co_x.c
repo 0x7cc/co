@@ -26,7 +26,7 @@ static void* thread_start_routine (void* data)
   co_thread_init ();
 
   ctx->func (ctx->data);
-  co_thread_run ();
+  co_run ();
 
   co_thread_cleanup ();
 
@@ -70,6 +70,8 @@ void co_tls_set (co_int key, void* value)
   pthread_setspecific (key, value);
 }
 
+#if CO_ENABLE_HOOKS
+
 ssize_t recv (int sockfd, void* buf, size_t len, int flags)
 {
   co_yield_ ();
@@ -88,11 +90,15 @@ int puts (const char* s)
   return hooks.sys_puts (s);
 }
 
+#endif
+
 void co_init_hooks ()
 {
+#if CO_ENABLE_HOOKS
   hooks.sys_puts = (sys_puts_t)dlsym (RTLD_NEXT, "puts");
   hooks.sys_recv = (sys_recv_t)dlsym (RTLD_NEXT, "recv");
   hooks.sys_send = (sys_send_t)dlsym (RTLD_NEXT, "send");
+#endif
 }
 
 #endif // __linux
