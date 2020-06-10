@@ -1,9 +1,9 @@
 LIBRARY
 EXPORTS
 co_enable
-co_add
+co_task_add
 co_run
-co_yield
+co_yield_
 co_thread_create
 co_thread_join
 co_alloc

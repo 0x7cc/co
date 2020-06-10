@@ -47,7 +47,7 @@ int main (int argc, char* argv[])
   {
     // hiredis.c:redisBufferRead 需要16k以上的栈空间.
     co_task_add (test, 0, 0x8000);
-    // fff(NULL);
+    // test (NULL);
   }
 
   co_run ();
