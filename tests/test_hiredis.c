@@ -6,11 +6,9 @@
 #include <stdio.h>
 #include <hiredis/hiredis.h>
 
-static void* test (void* data)
-{
+static void* test (void* data) {
   redisContext* ctx = redisConnect ("127.0.0.1", 6379);
-  if (ctx->err)
-  {
+  if (ctx->err) {
     puts (ctx->errstr);
     return nullptr;
   }
@@ -38,8 +36,7 @@ static void* test (void* data)
   return nullptr;
 }
 
-int main (int argc, char* argv[])
-{
+int main (int argc, char* argv[]) {
   co_init ();
   co_thread_init ();
 

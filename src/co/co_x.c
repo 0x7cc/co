@@ -25,8 +25,7 @@ struct
   sys_write_t sys_write;
 } hooks;
 
-static void* thread_start_routine (void* data)
-{
+static void* thread_start_routine (void* data) {
   threadCtx* ctx = (threadCtx*)data;
 
   co_thread_init ();
@@ -42,8 +41,7 @@ static void* thread_start_routine (void* data)
   return 0;
 }
 
-co_int co_thread_create (co_func func, void* data)
-{
+co_int co_thread_create (co_func func, void* data) {
   pthread_t  t;
   threadCtx* ctx = (threadCtx*)co_alloc (sizeof (threadCtx));
   ctx->func      = func;
@@ -52,42 +50,35 @@ co_int co_thread_create (co_func func, void* data)
   return (co_int)t;
 }
 
-co_int co_thread_join (co_int tid)
-{
+co_int co_thread_join (co_int tid) {
   return pthread_join ((pthread_t)tid, nullptr);
 }
 
-void co_tls_init (co_int* key)
-{
+void co_tls_init (co_int* key) {
   pthread_key_create ((pthread_key_t*)key, NULL);
 }
 
-void co_tls_cleanup (co_int key)
-{
+void co_tls_cleanup (co_int key) {
   pthread_key_delete (key);
 }
 
-void* co_tls_get (co_int key)
-{
+void* co_tls_get (co_int key) {
   return pthread_getspecific (key);
 }
 
-void co_tls_set (co_int key, void* value)
-{
+void co_tls_set (co_int key, void* value) {
   pthread_setspecific (key, value);
 }
 
 #if CO_ENABLE_HOOKS
 
-ssize_t recv (int sockfd, void* buf, size_t len, int flags)
-{
+ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
     fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
   }
   register int ret = 0;
-  while (1)
-  {
+  while (1) {
     co_yield_ ();
     ret = hooks.sys_recv (sockfd, buf, len, flags);
     if (ret == -1 && errno == EAGAIN)
@@ -97,15 +88,13 @@ ssize_t recv (int sockfd, void* buf, size_t len, int flags)
   return -1; // ???
 }
 
-ssize_t send (int sockfd, const void* buf, size_t len, int flags)
-{
+ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
     fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
   }
   register int ret = 0;
-  while (1)
-  {
+  while (1) {
     co_yield_ ();
     ret = hooks.sys_send (sockfd, buf, len, flags);
     if (ret == -1 && errno == EAGAIN)
@@ -115,16 +104,14 @@ ssize_t send (int sockfd, const void* buf, size_t len, int flags)
   return -1; // ???
 }
 
-ssize_t read (int fd, void* buf, size_t count)
-{
+ssize_t read (int fd, void* buf, size_t count) {
   {
     int flags = fcntl (fd, F_GETFL, 0);
     fcntl (fd, F_SETFL, flags | O_NONBLOCK);
   }
 
   register int ret = 0;
-  while (1)
-  {
+  while (1) {
     co_yield_ ();
     ret = hooks.sys_read (fd, buf, count);
     if (ret == -1 && errno == EAGAIN)
@@ -134,15 +121,13 @@ ssize_t read (int fd, void* buf, size_t count)
   return -1; // ???
 }
 
-ssize_t write (int fd, const void* buf, size_t count)
-{
+ssize_t write (int fd, const void* buf, size_t count) {
   {
     int flags = fcntl (fd, F_GETFL, 0);
     fcntl (fd, F_SETFL, flags | O_NONBLOCK);
   }
   register int ret = 0;
-  while (1)
-  {
+  while (1) {
     co_yield_ ();
     ret = hooks.sys_write (fd, buf, count);
     if (ret == -1 && errno == EAGAIN)
@@ -152,16 +137,14 @@ ssize_t write (int fd, const void* buf, size_t count)
   return -1; // ???
 }
 
-int puts (const char* s)
-{
+int puts (const char* s) {
   co_yield_ ();
   return hooks.sys_puts (s);
 }
 
 #endif
 
-void co_init_hooks ()
-{
+void co_init_hooks () {
 #if CO_ENABLE_HOOKS
   hooks.sys_puts  = (sys_puts_t)dlsym (RTLD_NEXT, "puts");
   hooks.sys_recv  = (sys_recv_t)dlsym (RTLD_NEXT, "recv");

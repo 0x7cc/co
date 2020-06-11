@@ -9,29 +9,25 @@ co_int tls_key_thread_ctx;
 /**
  * 携程执行结束返回时的处理函数
  */
-static void co_exited (void* result)
-{
+static void co_exited (void* result) {
   co_thread_context_t* threadCtx  = co_tls_get (tls_key_thread_ctx);
   threadCtx->task_current->status = CO_TASK_STATUS_COMPLETED;
   threadCtx->task_current->result = result;
   co_yield_ ();
 }
 
-co_int co_init ()
-{
+co_int co_init () {
   co_tls_init (&tls_key_thread_ctx);
   co_init_hooks ();
   return 0;
 }
 
-void co_cleanup ()
-{
+void co_cleanup () {
   co_tls_cleanup (tls_key_thread_ctx);
   tls_key_thread_ctx = 0;
 }
 
-void co_thread_init ()
-{
+void co_thread_init () {
   co_thread_context_t* threadCtx = co_calloc (sizeof (co_thread_context_t));
   co_tls_set (tls_key_thread_ctx, threadCtx);
 
@@ -44,16 +40,14 @@ void co_thread_init ()
   threadCtx->num_of_coroutines = 0;
 }
 
-void co_thread_cleanup ()
-{
+void co_thread_cleanup () {
   co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
   co_free (threadCtx->task_head);
   co_free (threadCtx);
   co_tls_set (tls_key_thread_ctx, NULL);
 }
 
-co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
-{
+co_task_t* co_task_add (co_func func, void* data, co_uint stackSize) {
   co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
   register co_task_t*  task      = (co_task_t*)co_calloc (sizeof (co_task_t));
   register co_task_t*  last      = threadCtx->task_last;
@@ -81,13 +75,11 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize)
   return task;
 }
 
-void co_task_del (co_task_t* task)
-{
+void co_task_del (co_task_t* task) {
   task->status |= CO_TASK_STATUS_INTERRUPTED;
 }
 
-void* co_task_await (co_task_t* task)
-{
+void* co_task_await (co_task_t* task) {
   while ((task->status & (CO_TASK_STATUS_COMPLETED | CO_TASK_STATUS_INTERRUPTED)) == 0)
     co_yield_ ();
 
@@ -97,22 +89,19 @@ void* co_task_await (co_task_t* task)
   return nullptr;
 }
 
-void co_run ()
-{
+void co_run () {
   co_thread_context_t* threadCtx = co_tls_get (tls_key_thread_ctx);
 
   while (threadCtx->num_of_coroutines)
     co_yield_ ();
 }
 
-void co_yield_ ()
-{
+void co_yield_ () {
   co_thread_context_t*      threadCtx = co_tls_get (tls_key_thread_ctx);
   register co_task_t* const task      = threadCtx->task_current;
   register co_task_t*       next      = task->next;
 
-  while (next->status & (CO_TASK_STATUS_INTERRUPTED | CO_TASK_STATUS_COMPLETED))
-  {
+  while (next->status & (CO_TASK_STATUS_INTERRUPTED | CO_TASK_STATUS_COMPLETED)) {
     co_task_t* t = next;
     next         = next->next;
 
@@ -132,37 +121,29 @@ void co_yield_ ()
   co_swap_context (&(task->ctx), &(next->ctx));
 }
 
-void* co_alloc (co_uint size)
-{
+void* co_alloc (co_uint size) {
   return malloc (size);
 }
 
-void* co_calloc (co_uint size)
-{
+void* co_calloc (co_uint size) {
   return calloc (1, size);
 }
 
-void co_free (void* ptr)
-{
+void co_free (void* ptr) {
   free (ptr);
 }
 
-void co_cond_init (co_int* mem)
-{
+void co_cond_init (co_int* mem) {
 }
 
-void co_cond_cleanup (co_int* mem)
-{
+void co_cond_cleanup (co_int* mem) {
 }
 
-void co_cond_wait (co_int* mem, co_int timeout)
-{
+void co_cond_wait (co_int* mem, co_int timeout) {
 }
 
-void co_cond_notify_one (co_int* mem)
-{
+void co_cond_notify_one (co_int* mem) {
 }
 
-void co_cond_notify_all (co_int* mem)
-{
+void co_cond_notify_all (co_int* mem) {
 }

@@ -45,8 +45,7 @@
 
 // clang-format on
 
-typedef struct co_task_context_s
-{
+typedef struct co_task_context_s {
   co_uint ax;
   co_uint bx;
   co_uint cx;
@@ -66,8 +65,7 @@ typedef struct co_task_context_s
 #endif
 } co_task_context_t;
 
-typedef struct co_task_s
-{
+typedef struct co_task_s {
   struct co_task_s* prev;
   struct co_task_s* next;
   void*             stack;
@@ -76,8 +74,7 @@ typedef struct co_task_s
   co_task_context_t ctx;
 } co_task_t;
 
-typedef struct co_thread_context_s
-{
+typedef struct co_thread_context_s {
   /***
    * 循环链表的头节点
    */
