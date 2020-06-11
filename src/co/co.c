@@ -146,3 +146,23 @@ void co_free (void* ptr)
 {
   free (ptr);
 }
+
+void co_cond_init (co_int* mem)
+{
+}
+
+void co_cond_cleanup (co_int* mem)
+{
+}
+
+void co_cond_wait (co_int* mem, co_int timeout)
+{
+}
+
+void co_cond_notify_one (co_int* mem)
+{
+}
+
+void co_cond_notify_all (co_int* mem)
+{
+}

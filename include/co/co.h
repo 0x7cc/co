@@ -177,6 +177,12 @@ CO_API void    co_atomic_dec (co_uint* mem);
 CO_API void    co_atomic_add (co_uint* mem, co_uint value);
 CO_API void    co_atomic_sub (co_uint* mem, co_uint value);
 
+CO_API void co_cond_init (co_int* mem);
+CO_API void co_cond_cleanup (co_int* mem);
+CO_API void co_cond_wait (co_int* mem, co_int timeout);
+CO_API void co_cond_notify_one (co_int* mem);
+CO_API void co_cond_notify_all (co_int* mem);
+
 CO_API void  co_tls_init (co_int* key);
 CO_API void  co_tls_cleanup (co_int key);
 CO_API void* co_tls_get (co_int key);
