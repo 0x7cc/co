@@ -9,6 +9,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/time.h>
+
+typedef struct
+{
+  co_func func;
+  void*   data;
+} threadCtx;
 
 typedef int (*sys_puts_t) (const char* s);
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
@@ -68,6 +75,15 @@ void* co_tls_get (co_int key) {
 
 void co_tls_set (co_int key, void* value) {
   pthread_setspecific (key, value);
+}
+
+co_uint64 co_timestamp_ms () {
+  struct timeval now = {0};
+  gettimeofday (&now, NULL);
+  unsigned long long u = now.tv_sec;
+  u *= 1000;
+  u += now.tv_usec / 1000;
+  return u;
 }
 
 #if CO_ENABLE_HOOKS

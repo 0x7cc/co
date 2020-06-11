@@ -5,6 +5,12 @@
 #include "co/co_private.h"
 #include <windows.h>
 
+typedef struct
+{
+  co_func func;
+  void*   data;
+} threadCtx;
+
 static DWORD WINAPI thread_start_routine (LPVOID lpThreadParameter) {
   threadCtx* ctx = (threadCtx*)lpThreadParameter;
 

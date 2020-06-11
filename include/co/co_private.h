@@ -37,9 +37,10 @@
   #error "目前只支持64位格式的fastcall"
 #endif
 
-#define CO_TASK_STATUS_READY       ((co_uint)1 << 0)
-#define CO_TASK_STATUS_INTERRUPTED ((co_uint)1 << 1)
-#define CO_TASK_STATUS_COMPLETED   ((co_uint)1 << 2)
+#define CO_TASK_STATUS_READY       ((co_uint)1 << 0u)
+#define CO_TASK_STATUS_INTERRUPTED ((co_uint)1 << 1u)
+#define CO_TASK_STATUS_COMPLETED   ((co_uint)1 << 2u)
+#define CO_TASK_STATUS_WAITING     ((co_uint)1 << 3u)
 
 #define CO_MINIMAL_STACK_SIZE 0x4000
 
@@ -71,6 +72,7 @@ typedef struct co_task_s {
   void*             stack;
   void*             result;
   co_uint           status;
+  co_uint64         timeout;
   co_task_context_t ctx;
 } co_task_t;
 
@@ -95,12 +97,6 @@ typedef struct co_thread_context_s {
    */
   co_int num_of_coroutines;
 } co_thread_context_t;
-
-typedef struct
-{
-  co_func func;
-  void*   data;
-} threadCtx;
 
 extern co_int tls_key_thread_ctx;
 
