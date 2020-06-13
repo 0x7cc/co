@@ -9,7 +9,7 @@ static void* co1 (void* data) {
   co_int* cond = data;
   while (1) {
     puts ("aaa");
-    co_cond_wait (cond, 2000);
+    co_cond_wait (*cond, 2000);
     puts ("bbb");
   }
   return nullptr;
@@ -18,7 +18,7 @@ static void* co1 (void* data) {
 static void* co2 (void* data) {
   co_int* cond = data;
   while (1) {
-    co_cond_notify_all (cond);
+    co_cond_notify_all (*cond);
   }
   return nullptr;
 }
