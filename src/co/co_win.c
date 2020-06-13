@@ -4,6 +4,7 @@
 #include "co/co.h"
 #include "co/co_private.h"
 #include <windows.h>
+#include <sys/timeb.h>
 
 typedef struct
 {
@@ -52,6 +53,12 @@ void* co_tls_get (co_int key) {
 
 void co_tls_set (co_int key, void* value) {
   TlsSetValue (key, value);
+}
+
+co_uint64 co_timestamp_ms () {
+  struct timeb rawtime;
+  ftime (&rawtime);
+  return rawtime.time * 1000 + rawtime.millitm;
 }
 
 void co_init_hooks () {
