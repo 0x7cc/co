@@ -55,6 +55,8 @@ add_library ( co
   include/co/co.h
   include/co/co_private.h
   src/co/co.c
+  src/co/co_linux.c
+  src/co/co_macos.c
   src/co/co_win.c
   src/co/co_x.c
   )

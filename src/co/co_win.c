@@ -64,4 +64,12 @@ co_uint64 co_timestamp_ms () {
 void co_init_hooks () {
 }
 
+void co_thread_init_native (co_thread_context_t* ctx) {
+
+}
+
+void co_thread_cleanup_native (co_thread_context_t* ctx) {
+
+}
+
 #endif // WIN32

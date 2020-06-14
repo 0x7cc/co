@@ -6,10 +6,6 @@
 
 co_int tls_key_thread_ctx;
 
-static inline co_thread_context_t* co_get_context () {
-  return co_tls_get (tls_key_thread_ctx);
-}
-
 /**
  * 携程执行结束返回时的处理函数
  */
@@ -35,18 +31,22 @@ void co_thread_init () {
   co_thread_context_t* threadCtx = co_calloc (sizeof (co_thread_context_t));
   co_tls_set (tls_key_thread_ctx, threadCtx);
 
-  threadCtx->task_head = (co_task_t*)co_calloc (sizeof (co_task_t));
+  threadCtx->list_active = (co_task_t*)co_calloc (sizeof (co_task_t));
 
-  threadCtx->task_head->prev   = threadCtx->task_head;
-  threadCtx->task_head->next   = threadCtx->task_head;
-  threadCtx->task_last         = threadCtx->task_head;
-  threadCtx->task_current      = threadCtx->task_head;
-  threadCtx->num_of_coroutines = 0;
+  threadCtx->list_active->prev = threadCtx->list_active;
+  threadCtx->list_active->next = threadCtx->list_active;
+  threadCtx->list_active_last  = threadCtx->list_active;
+  threadCtx->task_current      = threadCtx->list_active;
+  threadCtx->num_of_active     = 0;
+
+  co_thread_init_native (threadCtx);
 }
 
 void co_thread_cleanup () {
   co_thread_context_t* threadCtx = co_get_context ();
-  co_free (threadCtx->task_head);
+  co_thread_cleanup_native (threadCtx);
+
+  co_free (threadCtx->list_active);
   co_free (threadCtx);
   co_tls_set (tls_key_thread_ctx, NULL);
 }
@@ -54,12 +54,10 @@ void co_thread_cleanup () {
 co_task_t* co_task_add (co_func func, void* data, co_uint stackSize) {
   co_thread_context_t* threadCtx = co_get_context ();
   register co_task_t*  task      = (co_task_t*)co_calloc (sizeof (co_task_t));
-  register co_task_t*  last      = threadCtx->task_last;
+  register co_task_t*  last      = threadCtx->list_active_last;
 
   stackSize = co_max (stackSize, CO_MINIMAL_STACK_SIZE) & 0xFFFFFFFFFFFFFFF0;
 
-  task->prev      = last;
-  task->next      = threadCtx->task_head;
   task->stack     = co_calloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.ip    = (co_uint)func;
@@ -70,11 +68,8 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize) {
   task->ctx.sp                     = ((((co_uint)task->stack) + stackSize - 32) & 0xFFFFFFFFFFFFFFF0) - 8;
   *((co_uint*)(task->ctx.sp + 16)) = (co_uint)co_exited; // 玛德智障MSVC，函数中的参数居然会保存到当前函数栈之外(rsp + xxx).由于我只使用了一个参数,所以只被占用了rsp+8 位置的8个字节.
   *((co_uint*)(task->ctx.sp))      = (co_uint)co_exited_asm;
-  last->next->prev                 = task;
-  last->next                       = task;
-  threadCtx->task_last             = task;
 
-  ++threadCtx->num_of_coroutines;
+  co_add_task_to_active (task);
 
   return task;
 }
@@ -95,44 +90,50 @@ void* co_task_await (co_task_t* task) {
 
 void co_run () {
   co_thread_context_t* threadCtx = co_get_context ();
-  ;
 
-  while (threadCtx->num_of_coroutines)
+  while (threadCtx->num_of_active || threadCtx->num_of_waiting) {
     co_yield_ ();
+  }
 }
 
 void co_yield_ () {
-  co_thread_context_t* threadCtx = co_get_context ();
-  ;
-  register co_task_t* const task = threadCtx->task_current;
-  register co_task_t*       next = task->next;
+  co_thread_context_t* ctx = co_get_context ();
+
+  register co_task_t* const task = ctx->task_current;
+  register co_task_t*       active = task->next;
+  register co_task_t*       waiting = ctx->list_active;
   register co_uint64        now  = co_timestamp_ms ();
 
   while (1) {
-    if (next->status & (CO_TASK_STATUS_INTERRUPTED | CO_TASK_STATUS_COMPLETED)) {
-      co_task_t* t = next;
-      next         = next->next;
+  repeat:
+    switch (active->status) {
+      case CO_TASK_STATUS_INTERRUPTED:
+      case CO_TASK_STATUS_COMPLETED: {
+        co_task_t* t = active;
+        active       = active->next;
 
-      if (t == threadCtx->task_last)
-        threadCtx->task_last = t->prev;
+        co_remove_task_from_active (t);
 
-      t->prev->next = t->next;
-      t->next->prev = t->prev;
-      co_free (t->stack);
-      co_free (t);
-
-      --threadCtx->num_of_coroutines;
-      continue;
-    } else if ((next->status & CO_TASK_STATUS_WAITING) && now <= next->timeout) {
-      next = next->next;
-      continue;
+        co_free (t->stack);
+        co_free (t);
+      }
+        goto repeat;
+      case CO_TASK_STATUS_WAITING: {
+        co_task_t* t = active;
+        active       = active->next;
+        co_remove_task_from_active (t);
+        co_add_task_to_waiting (t);
+      }
+        goto repeat;
+      default:
+        break;
     }
     break;
   }
 
-  threadCtx->task_current = next;
+  ctx->task_current = active;
 
-  co_swap_context (&(task->ctx), &(next->ctx));
+  co_swap_context (&(task->ctx), &(active->ctx));
 }
 
 void* co_alloc (co_uint size) {

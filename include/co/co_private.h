@@ -4,6 +4,7 @@
 
 #ifndef CO_PRIVATE_H
 #define CO_PRIVATE_H
+
 // clang-format off
 
 #define elf64_fastcall_argv0 di
@@ -80,12 +81,22 @@ typedef struct co_thread_context_s {
   /***
    * 循环链表的头节点
    */
-  co_task_t* task_head;
+  co_task_t* list_active;
 
   /**
    * 尾指针，方便快速添加新协程
    */
-  co_task_t* task_last;
+  co_task_t* list_active_last;
+
+  /**
+   * 等待中的协程列表
+   */
+  co_task_t* list_waiting;
+
+  /**
+   * 尾指针，方便快速添加新协程
+   */
+  co_task_t* list_waiting_last;
 
   /**
    * 当前运行的任务指针
@@ -95,10 +106,86 @@ typedef struct co_thread_context_s {
   /**
    * 协程数
    */
-  co_int num_of_coroutines;
+  co_int num_of_active;
+
+  /**
+   * 协程数
+   */
+  co_int num_of_waiting;
+
+  union {
+    /**
+     * epoll file descriptor
+     */
+    co_int epfd;
+
+    /**
+     * IOCP
+     */
+    co_int iocpfd;
+
+    /**
+     * kqueue
+     */
+    co_int kqueuefd;
+  };
+
 } co_thread_context_t;
 
 extern co_int tls_key_thread_ctx;
+
+static inline co_thread_context_t* co_get_context () {
+  return (co_thread_context_t*)co_tls_get (tls_key_thread_ctx);
+}
+
+void co_thread_init_native (co_thread_context_t* ctx);
+void co_thread_cleanup_native (co_thread_context_t* ctx);
+
+static inline void co_add_task_to_active (co_task_t* task) {
+  co_thread_context_t* ctx  = co_get_context ();
+  register co_task_t*  last = ctx->list_active_last;
+  task->next                = ctx->list_active;
+  task->prev                = last;
+  task->next->prev          = task;
+  task->prev->next          = task;
+  ctx->list_active_last     = task;
+  ++ctx->num_of_active;
+}
+
+static inline void co_remove_task_from_active (co_task_t* task) {
+  co_thread_context_t* ctx = co_get_context ();
+  if (task == ctx->list_active_last)
+    ctx->list_active_last = task->prev;
+
+  task->next->prev = task->prev;
+  task->prev->next = task->next;
+  task->prev       = nullptr;
+  task->next       = nullptr;
+  --ctx->num_of_active;
+}
+
+static inline void co_add_task_to_waiting (co_task_t* task) {
+  co_thread_context_t* ctx  = co_get_context ();
+  register co_task_t*  last = ctx->list_waiting_last;
+  task->next                = ctx->list_waiting;
+  task->prev                = last;
+  task->next->prev          = task;
+  task->prev->next          = task;
+  ctx->list_active_last     = task;
+  ++ctx->num_of_waiting;
+}
+
+static inline void co_remove_task_from_waiting (co_task_t* task) {
+  co_thread_context_t* ctx = co_get_context ();
+  if (task == ctx->list_waiting_last)
+    ctx->list_waiting_last = task->prev;
+
+  task->next->prev = task->prev;
+  task->prev->next = task->next;
+  task->prev       = nullptr;
+  task->next       = nullptr;
+  --ctx->num_of_waiting;
+}
 
 /**
  * 切换上下文(由汇编实现)
