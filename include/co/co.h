@@ -44,10 +44,10 @@ static_assert (sizeof (co_int8)  == 1, "");
 static_assert (sizeof (co_int16) == 2, "");
 static_assert (sizeof (co_int32) == 4, "");
 static_assert (sizeof (co_int64) == 8, "");
-static_assert (sizeof (co_int8)  == 1, "");
-static_assert (sizeof (co_int16) == 2, "");
-static_assert (sizeof (co_int32) == 4, "");
-static_assert (sizeof (co_int64) == 8, "");
+static_assert (sizeof (co_uint8)  == 1, "");
+static_assert (sizeof (co_uint16) == 2, "");
+static_assert (sizeof (co_uint32) == 4, "");
+static_assert (sizeof (co_uint64) == 8, "");
 
 #if __x86_64__ || _WIN64
   typedef co_int64  co_int;
@@ -66,6 +66,9 @@ static_assert (sizeof (co_int64) == 8, "");
 #ifndef NULL
   #define NULL 0
 #endif
+
+#define CO_RUN_DEFAULT 0
+#define CO_RUN_ONCE    1
 
 // clang-format on
 
