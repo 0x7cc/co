@@ -26,7 +26,7 @@ static void* test (void* data) {
   {
     redisReply* reply = redisCommand (ctx, "get fddbe044-072e-487d-9581-4b61854e7a48");
 
-    if (reply)
+    if (reply && reply->str)
       puts (reply->str);
     else
       puts ("NULL???");
