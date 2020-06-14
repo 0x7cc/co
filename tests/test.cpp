@@ -20,7 +20,7 @@ void* coroutine_1 (void* data)
 {
   for (int i = 0; i < 10000; ++i)
   {
-    printf ("coroutine_1 : i = %d, data = %p\n", i, data);
+    printf ("coroutine_1 : i = %d, data = 0x%llx\n", i, (co_uintptr)data);
     co_task_add (coroutine_3, nullptr, 0);
   }
   // co_yield ();
@@ -31,7 +31,7 @@ void* coroutine_2 (void* data)
 {
   for (int i = 0; i < 3; ++i)
   {
-    printf ("coroutine_2 : i = %d, data = %p\n", i, data);
+    printf ("coroutine_2 : i = %d, data = 0x%llx\n", i, (co_uintptr)data);
     co_yield_ ();
   }
   return nullptr;
