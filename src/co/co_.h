@@ -4,6 +4,7 @@
 
 #ifndef CO_PRIVATE_H
 #define CO_PRIVATE_H
+
 // clang-format off
 
 #define elf64_fastcall_argv0 di
@@ -99,6 +100,10 @@ typedef struct co_thread_context_s {
 } co_thread_context_t;
 
 extern co_int tls_key_thread_ctx;
+
+static inline co_thread_context_t* co_get_context () {
+  return co_tls_get (tls_key_thread_ctx);
+}
 
 /**
  * 切换上下文(由汇编实现)

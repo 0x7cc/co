@@ -53,7 +53,7 @@ add_library ( co
   STATIC
   ${NASM_OBJ}
   include/co/co.h
-  include/co/co_private.h
+  src/co/co_.h
   src/co/co.c
   src/co/co_linux.c
   src/co/co_macos.c

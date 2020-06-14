@@ -32,9 +32,9 @@
 #endif
 
 typedef signed char        co_int8;
-typedef short              co_int16;
-typedef int                co_int32;
-typedef long long          co_int64;
+typedef signed short       co_int16;
+typedef signed int         co_int32;
+typedef signed long long   co_int64;
 typedef unsigned char      co_uint8;
 typedef unsigned short     co_uint16;
 typedef unsigned int       co_uint32;
@@ -138,13 +138,6 @@ CO_API void co_thread_cleanup ();
  * @return
  */
 CO_API co_task_t* co_task_add (co_func func, void* data, co_uint stackSize);
-
-/**
- * 中断并删除一个协程
- * @param task      协程
- * @return
- */
-CO_API void co_task_del (co_task_t* task);
 
 /**
  * 等待一个协程结束，并获取返回值.

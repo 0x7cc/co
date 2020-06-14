@@ -1,14 +1,10 @@
 
 #include "co/co.h"
-#include "co/co_private.h"
+#include "co_.h"
 #include <string.h>
 #include <stdlib.h>
 
 co_int tls_key_thread_ctx;
-
-static inline co_thread_context_t* co_get_context () {
-  return co_tls_get (tls_key_thread_ctx);
-}
 
 /**
  * 携程执行结束返回时的处理函数
@@ -77,10 +73,6 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize) {
   ++threadCtx->num_of_coroutines;
 
   return task;
-}
-
-void co_task_del (co_task_t* task) {
-  task->status |= CO_TASK_STATUS_INTERRUPTED;
 }
 
 void* co_task_await (co_task_t* task) {
