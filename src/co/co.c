@@ -95,7 +95,6 @@ void* co_task_await (co_task_t* task) {
 
 void co_run () {
   co_thread_context_t* threadCtx = co_get_context ();
-  ;
 
   while (threadCtx->num_of_coroutines)
     co_yield_ ();
@@ -103,7 +102,7 @@ void co_run () {
 
 void co_yield_ () {
   co_thread_context_t* threadCtx = co_get_context ();
-  ;
+
   register co_task_t* const task = threadCtx->task_current;
   register co_task_t*       next = task->next;
   register co_uint64        now  = co_timestamp_ms ();
