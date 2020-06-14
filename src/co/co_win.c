@@ -2,7 +2,7 @@
 #if _WIN32
 
 #include "co/co.h"
-#include "co/co_private.h"
+#include "co_.h"
 #include <windows.h>
 #include <sys/timeb.h>
 

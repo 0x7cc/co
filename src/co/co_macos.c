@@ -5,7 +5,7 @@
 #if __APPLE__
 
 #include "co/co.h"
-#include "co/co_private.h"
+#include "co_.h"
 #define _GNU_SOURCE 1
 #include <dlfcn.h>
 #include <pthread.h>
@@ -114,7 +114,7 @@ ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
   register int sentbytes = 0;
   while (sentbytes != len) {
     co_yield_ ();
-    ret = hooks.sys_send (sockfd, buf, len, flags);
+    ret = hooks.sys_send (sockfd, ((const unsigned char*)buf) + sentbytes, len - sentbytes, flags);
     if (ret == -1) {
       if (errno == EAGAIN)
         continue;
@@ -151,7 +151,7 @@ ssize_t write (int fd, const void* buf, size_t count) {
   register int sentbytes = 0;
   while (sentbytes != count) {
     co_yield_ ();
-    ret = hooks.sys_write (fd, buf, count);
+    ret = hooks.sys_write (fd, ((const unsigned char*)buf) + sentbytes, count - sentbytes);
     if (ret == -1) {
       if (errno == EAGAIN)
         continue;
