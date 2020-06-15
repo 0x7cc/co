@@ -15,10 +15,6 @@ set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin/debug/ )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release/ )
 
-if ( CO_ENABLE_HOOKS )
-  add_compile_definitions ( CO_ENABLE_HOOKS )
-endif ()
-
 #####################################
 
 if ( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
@@ -67,6 +63,10 @@ target_include_directories ( co
 
 if ( CMAKE_HOST_UNIX )
   target_link_libraries ( co PUBLIC pthread dl )
+endif ()
+
+if ( CO_ENABLE_HOOKS )
+  target_compile_definitions ( co PRIVATE CO_ENABLE_HOOKS )
 endif ()
 
 #if ( MSVC )
