@@ -5,6 +5,8 @@
 #ifndef CO_PRIVATE_H
 #define CO_PRIVATE_H
 
+#include <assert.h>
+
 // clang-format off
 
 #define elf64_fastcall_argv0 di
@@ -81,12 +83,22 @@ typedef struct co_thread_context_s {
   /***
    * 循环链表的头节点
    */
-  co_task_t* task_head;
+  co_task_t* list_active;
 
   /**
    * 尾指针，方便快速添加新协程
    */
-  co_task_t* task_last;
+  co_task_t* list_active_tail;
+
+  /***
+   * 循环链表的头节点
+   */
+  co_task_t* list_pending;
+
+  /**
+   * 尾指针，方便快速添加新协程
+   */
+  co_task_t* list_pending_tail;
 
   /**
    * 当前运行的任务指针
@@ -96,13 +108,83 @@ typedef struct co_thread_context_s {
   /**
    * 协程数
    */
-  co_int num_of_coroutines;
+  co_int num_of_active;
+
+  /**
+   * 协程数
+   */
+  co_int num_of_pending;
+
+  /**
+   * epoll fd
+   * iocp fd
+   * kqueue fd
+   */
+  union {
+    co_int epfd;
+    co_int iocp;
+    co_int kqfd;
+  };
 } co_thread_context_t;
 
 extern co_int tls_key_thread_ctx;
 
 static inline co_thread_context_t* co_get_context () {
   return co_tls_get (tls_key_thread_ctx);
+}
+
+static inline void co_add_to_active (co_task_t* task) {
+  register co_thread_context_t* ctx = co_get_context ();
+
+  task->prev            = ctx->list_active_tail;
+  task->next            = ctx->list_active;
+  task->prev->next      = task;
+  task->next->prev      = task;
+  ctx->list_active_tail = task;
+
+  ++ctx->num_of_active;
+
+}
+
+static inline void co_remove_from_active (co_task_t* task) {
+  register co_thread_context_t* ctx = co_get_context ();
+
+  assert (task != ctx->list_active);
+
+  if (task == ctx->list_active_tail)
+    ctx->list_active_tail = task->prev;
+
+  task->prev->next = task->next;
+  task->next->prev = task->prev;
+  task->next       = nullptr;
+  task->prev       = nullptr;
+
+  --ctx->num_of_active;
+}
+
+static inline void co_add_to_pending (co_task_t* task) {
+  register co_thread_context_t* ctx = co_get_context ();
+
+  task->prev             = ctx->list_pending_tail;
+  task->next             = ctx->list_pending;
+  task->prev->next       = task;
+  task->next->prev       = task;
+  ctx->list_pending_tail = task;
+
+  ++ctx->num_of_pending;
+}
+
+static inline void co_remove_from_pending (co_task_t* task) {
+  register co_thread_context_t* ctx = co_get_context ();
+
+  assert (task != ctx->list_pending);
+
+  task->prev->next = task->next;
+  task->next->prev = task->prev;
+  task->next       = nullptr;
+  task->prev       = nullptr;
+
+  --ctx->num_of_pending;
 }
 
 /**

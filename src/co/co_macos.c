@@ -4,9 +4,9 @@
 
 #if __APPLE__
 
+#define _GNU_SOURCE 1
 #include "co/co.h"
 #include "co_.h"
-#define _GNU_SOURCE 1
 #include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>

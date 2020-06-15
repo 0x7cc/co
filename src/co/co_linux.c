@@ -4,15 +4,16 @@
 
 #if __linux__
 
+#define _GNU_SOURCE 1
 #include "co/co.h"
 #include "co_.h"
-#define _GNU_SOURCE 1
 #include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <assert.h>
 
 typedef struct
 {
@@ -132,6 +133,9 @@ ssize_t read (int fd, void* buf, size_t count) {
     int flags = fcntl (fd, F_GETFL, 0);
     fcntl (fd, F_SETFL, flags | O_NONBLOCK);
   }
+  //  co_thread_context_t* ctx  = co_get_context ();
+  //  co_task_t*           next = ctx->task_current->next;
+  //  co_swap_context (&ctx->task_current->ctx, &next->ctx);
 
   register int ret = 0;
   while (1) {

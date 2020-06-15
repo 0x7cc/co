@@ -16,7 +16,7 @@ void* coroutine_3 (void* data) {
 void* coroutine_1 (void* data) {
   for (int i = 0; i < 10; ++i) {
     printf ("coroutine_1 : i = %d, data = 0x%llx\n", i, (co_uintptr)data);
-    co_task_add (coroutine_3, 0, 0);
+    //    co_task_add (coroutine_3, 0, 0);
   }
   co_yield_ ();
   return nullptr;
@@ -31,7 +31,7 @@ void* coroutine_2 (void* data) {
     printf ("coroutine_2 : i = %d, data = 0x%llx\n", i, (co_uintptr)data);
     co_yield_ ();
   }
-  printf ("coroutine_4 return : 0x%llx\n", (co_uintptr)co_task_await (co_task_add (coroutine_4, NULL, 0)));
+  //  printf ("coroutine_4 return : 0x%llx\n", (co_uintptr)co_task_await (co_task_add (coroutine_4, NULL, 0)));
   return nullptr;
 }
 
@@ -53,7 +53,7 @@ int main (int argc, char* argv[]) {
   co_init ();
 
   tid[0] = co_thread_create (work, nullptr);
-  tid[1] = co_thread_create (work2, nullptr);
+  //  tid[1] = co_thread_create (work2, nullptr);
 
   co_thread_join (tid[0]);
   co_thread_join (tid[1]);
