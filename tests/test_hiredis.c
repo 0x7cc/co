@@ -23,14 +23,15 @@ static void* test (void* data) {
     //    freeReplyObject (reply);
   }
 
-  {
+  for (int i = 0; i < 10; ++i) {
     redisReply* reply = redisCommand (ctx, "get 029c0abc-467d-4b6e-88c4-6fe02e775770");
 
     if (reply && reply->str)
       puts (reply->str);
     else
-      puts ("NULL???");
+      puts (ctx->errstr);
     freeReplyObject (reply);
+    printf ("%d\n", i);
   }
   redisFree (ctx);
   return nullptr;
@@ -50,6 +51,9 @@ void* test_redis (void* data) {
 int main (int argc, char* argv[]) {
   co_init ();
 
+  co_uint64 start = co_timestamp_ms ();
+  printf ("%lld\n", start);
+
   co_int ts[10];
   for (int i = 0; i < 10; ++i) {
     ts[i] = co_thread_create (test_redis, nullptr);
@@ -58,6 +62,9 @@ int main (int argc, char* argv[]) {
   for (int j = 0; j < 10; ++j) {
     co_thread_join (ts[j]);
   }
+  co_uint64 end = co_timestamp_ms ();
+  printf ("%lld\n", end);
+  printf ("%lld\n", end - start);
 
   co_cleanup ();
 
