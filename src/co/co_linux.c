@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -232,7 +233,7 @@ ssize_t write (int fd, const void* buf, size_t count) {
 
 void co_init_hooks () {
 #if CO_ENABLE_HOOKS
-  hooks.sys_connect = (sys_recv_t)dlsym (RTLD_NEXT, "connect");
+  hooks.sys_connect = (sys_connect_t)dlsym (RTLD_NEXT, "connect");
   hooks.sys_recv    = (sys_recv_t)dlsym (RTLD_NEXT, "recv");
   hooks.sys_send    = (sys_send_t)dlsym (RTLD_NEXT, "send");
   hooks.sys_read    = (sys_read_t)dlsym (RTLD_NEXT, "read");
