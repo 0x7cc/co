@@ -28,8 +28,9 @@ static void* test (void* data) {
 
     if (reply && reply->str)
       puts (reply->str);
-    else
-      puts ("NULL???");
+    else {
+      puts(ctx->errstr);
+    }
     freeReplyObject (reply);
   }
   redisFree (ctx);
@@ -39,6 +40,8 @@ static void* test (void* data) {
 int main (int argc, char* argv[]) {
   co_init ();
   co_thread_init ();
+  co_uint64 start = co_timestamp_ms();
+  printf("%lld\n", start);
 
   for (int i = 0; i < 10000; ++i) // redis default maxclients
   {
@@ -50,6 +53,10 @@ int main (int argc, char* argv[]) {
   co_run ();
   co_thread_cleanup ();
   co_cleanup ();
+
+  co_uint64 end = co_timestamp_ms();
+  printf("%lld\n", end);
+  printf("%lld\n", end-start);
 
   return 0;
 }
