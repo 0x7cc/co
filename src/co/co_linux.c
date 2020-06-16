@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -20,6 +21,7 @@ typedef struct
   co_func func;
   void*   data;
 } threadCtx;
+
 typedef int (*sys_accept_t) (int sockfd, struct sockaddr* addr, socklen_t* addrlen);
 typedef int (*sys_connect_t) (int sockfd, const struct sockaddr* addr, socklen_t addrlen);
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
