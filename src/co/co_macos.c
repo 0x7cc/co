@@ -62,6 +62,10 @@ co_int co_thread_join (co_int tid) {
   return pthread_join ((pthread_t)tid, nullptr);
 }
 
+void co_thread_init_native (co_thread_context_t* ctx) {}
+
+void co_thread_cleanup_native (co_thread_context_t* ctx) {}
+
 void co_tls_init (co_int* key) {
   pthread_key_create ((pthread_key_t*)key, NULL);
 }
@@ -85,6 +89,13 @@ co_uint64 co_timestamp_ms () {
   u *= 1000;
   u += now.tv_usec / 1000;
   return u;
+}
+
+void co_run () {
+  co_thread_context_t* ctx = co_get_context ();
+
+  while (ctx->num_of_active)
+    co_yield_ ();
 }
 
 #if CO_ENABLE_HOOKS

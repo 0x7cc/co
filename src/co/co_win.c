@@ -39,6 +39,10 @@ co_int co_thread_join (co_int tid) {
   return WaitForSingleObject ((HANDLE)tid, INFINITE);
 }
 
+void co_thread_init_native (co_thread_context_t* ctx) {}
+
+void co_thread_cleanup_native (co_thread_context_t* ctx) {}
+
 void co_tls_init (co_int* key) {
   *key = TlsAlloc ();
 }
@@ -59,6 +63,13 @@ co_uint64 co_timestamp_ms () {
   struct timeb rawtime;
   ftime (&rawtime);
   return rawtime.time * 1000 + rawtime.millitm;
+}
+
+void co_run () {
+  co_thread_context_t* ctx = co_get_context ();
+
+  while (ctx->num_of_active)
+    co_yield_ ();
 }
 
 void co_init_hooks () {

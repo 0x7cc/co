@@ -40,10 +40,10 @@
   #error "目前只支持64位格式的fastcall"
 #endif
 
-#define CO_TASK_STATUS_READY       ((co_uint)1 << 0u)
+#define CO_TASK_STATUS_ACTIVE      ((co_uint)1 << 0u)
 #define CO_TASK_STATUS_INTERRUPTED ((co_uint)1 << 1u)
 #define CO_TASK_STATUS_COMPLETED   ((co_uint)1 << 2u)
-#define CO_TASK_STATUS_WAITING     ((co_uint)1 << 3u)
+#define CO_TASK_STATUS_PENDING     ((co_uint)1 << 3u)
 
 #define CO_MINIMAL_STACK_SIZE 0x4000
 
@@ -90,20 +90,10 @@ typedef struct co_thread_context_s {
    */
   co_task_t* list_active_tail;
 
-  /***
-   * 循环链表的头节点
-   */
-  co_task_t* list_pending;
-
-  /**
-   * 尾指针，方便快速添加新协程
-   */
-  co_task_t* list_pending_tail;
-
   /**
    * 当前运行的任务指针
    */
-  co_task_t* task_current;
+  co_task_t* active;
 
   /**
    * 协程数
@@ -116,6 +106,11 @@ typedef struct co_thread_context_s {
   co_int num_of_pending;
 
   /**
+   * 协程数
+   */
+  co_int num_of_exited;
+
+  /**
    * epoll fd
    * iocp fd
    * kqueue fd
@@ -125,6 +120,9 @@ typedef struct co_thread_context_s {
     co_int iocp;
     co_int kqfd;
   };
+
+  co_uint64        now;
+
 } co_thread_context_t;
 
 extern co_int tls_key_thread_ctx;
@@ -133,59 +131,8 @@ static inline co_thread_context_t* co_get_context () {
   return co_tls_get (tls_key_thread_ctx);
 }
 
-static inline void co_add_to_active (co_task_t* task) {
-  register co_thread_context_t* ctx = co_get_context ();
-
-  task->prev            = ctx->list_active_tail;
-  task->next            = ctx->list_active;
-  task->prev->next      = task;
-  task->next->prev      = task;
-  ctx->list_active_tail = task;
-
-  ++ctx->num_of_active;
-
-}
-
-static inline void co_remove_from_active (co_task_t* task) {
-  register co_thread_context_t* ctx = co_get_context ();
-
-  assert (task != ctx->list_active);
-
-  if (task == ctx->list_active_tail)
-    ctx->list_active_tail = task->prev;
-
-  task->prev->next = task->next;
-  task->next->prev = task->prev;
-  task->next       = nullptr;
-  task->prev       = nullptr;
-
-  --ctx->num_of_active;
-}
-
-static inline void co_add_to_pending (co_task_t* task) {
-  register co_thread_context_t* ctx = co_get_context ();
-
-  task->prev             = ctx->list_pending_tail;
-  task->next             = ctx->list_pending;
-  task->prev->next       = task;
-  task->next->prev       = task;
-  ctx->list_pending_tail = task;
-
-  ++ctx->num_of_pending;
-}
-
-static inline void co_remove_from_pending (co_task_t* task) {
-  register co_thread_context_t* ctx = co_get_context ();
-
-  assert (task != ctx->list_pending);
-
-  task->prev->next = task->next;
-  task->next->prev = task->prev;
-  task->next       = nullptr;
-  task->prev       = nullptr;
-
-  --ctx->num_of_pending;
-}
+void co_thread_init_native(co_thread_context_t* ctx);
+void co_thread_cleanup_native(co_thread_context_t* ctx);
 
 /**
  * 切换上下文(由汇编实现)
