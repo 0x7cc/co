@@ -18,7 +18,7 @@ typedef struct
 {
   co_func func;
   void*   data;
-} threadCtx;
+} co_thread_create_info_t;
 
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
 typedef ssize_t (*sys_send_t) (int sockfd, const void* buf, size_t len, int flags);
@@ -34,7 +34,7 @@ struct
 } hooks;
 
 static void* thread_start_routine (void* data) {
-  threadCtx* ctx = (threadCtx*)data;
+  co_thread_create_info_t* ctx = (co_thread_create_info_t*)data;
 
   co_thread_init ();
 
@@ -50,10 +50,10 @@ static void* thread_start_routine (void* data) {
 }
 
 co_int co_thread_create (co_func func, void* data) {
-  pthread_t  t;
-  threadCtx* ctx = (threadCtx*)co_alloc (sizeof (threadCtx));
-  ctx->func      = func;
-  ctx->data      = data;
+  pthread_t                t;
+  co_thread_create_info_t* ctx = (co_thread_create_info_t*)co_alloc (sizeof (co_thread_create_info_t));
+  ctx->func                    = func;
+  ctx->data                    = data;
   pthread_create (&t, NULL, thread_start_routine, ctx);
   return (co_int)t;
 }

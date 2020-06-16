@@ -20,7 +20,7 @@ typedef struct
 {
   co_func func;
   void*   data;
-} threadCtx;
+} co_thread_create_info_t;
 
 typedef int (*sys_accept_t) (int sockfd, struct sockaddr* addr, socklen_t* addrlen);
 typedef int (*sys_connect_t) (int sockfd, const struct sockaddr* addr, socklen_t addrlen);
@@ -40,7 +40,7 @@ struct
 } hooks;
 
 static void* thread_start_routine (void* data) {
-  threadCtx* ctx = (threadCtx*)data;
+  co_thread_create_info_t* ctx = (co_thread_create_info_t*)data;
 
   co_thread_init ();
 
@@ -56,10 +56,10 @@ static void* thread_start_routine (void* data) {
 }
 
 co_int co_thread_create (co_func func, void* data) {
-  pthread_t  t;
-  threadCtx* ctx = (threadCtx*)co_alloc (sizeof (threadCtx));
-  ctx->func      = func;
-  ctx->data      = data;
+  pthread_t                t;
+  co_thread_create_info_t* ctx = (co_thread_create_info_t*)co_alloc (sizeof (co_thread_create_info_t));
+  ctx->func                    = func;
+  ctx->data                    = data;
   pthread_create (&t, NULL, thread_start_routine, ctx);
   return (co_int)t;
 }

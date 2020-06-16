@@ -81,22 +81,22 @@ typedef struct co_thread_context_s {
   /***
    * 循环链表的头节点
    */
-  co_task_t* task_head;
+  co_task_t* list_active;
 
   /**
    * 尾指针，方便快速添加新协程
    */
-  co_task_t* task_last;
+  co_task_t* list_active_tail;
 
   /**
    * 当前运行的任务指针
    */
-  co_task_t* task_current;
+  co_task_t* active;
 
   /**
    * 协程数
    */
-  co_int num_of_coroutines;
+  co_int num_of_active;
 } co_thread_context_t;
 
 extern co_int tls_key_thread_ctx;

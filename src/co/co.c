@@ -10,9 +10,9 @@ co_int tls_key_thread_ctx;
  * 携程执行结束返回时的处理函数
  */
 static void co_exited (void* result) {
-  co_thread_context_t* threadCtx  = co_get_context ();
-  threadCtx->task_current->status = CO_TASK_STATUS_COMPLETED;
-  threadCtx->task_current->result = result;
+  co_thread_context_t* ctx = co_get_context ();
+  ctx->active->status      = CO_TASK_STATUS_COMPLETED;
+  ctx->active->result      = result;
   co_yield_ ();
 }
 
@@ -28,34 +28,34 @@ void co_cleanup () {
 }
 
 void co_thread_init () {
-  co_thread_context_t* threadCtx = co_calloc (sizeof (co_thread_context_t));
-  co_tls_set (tls_key_thread_ctx, threadCtx);
+  co_thread_context_t* ctx = co_calloc (sizeof (co_thread_context_t));
+  co_tls_set (tls_key_thread_ctx, ctx);
 
-  threadCtx->task_head = (co_task_t*)co_calloc (sizeof (co_task_t));
+  ctx->list_active = (co_task_t*)co_calloc (sizeof (co_task_t));
 
-  threadCtx->task_head->prev   = threadCtx->task_head;
-  threadCtx->task_head->next   = threadCtx->task_head;
-  threadCtx->task_last         = threadCtx->task_head;
-  threadCtx->task_current      = threadCtx->task_head;
-  threadCtx->num_of_coroutines = 0;
+  ctx->list_active->prev = ctx->list_active;
+  ctx->list_active->next = ctx->list_active;
+  ctx->list_active_tail  = ctx->list_active;
+  ctx->active            = ctx->list_active;
+  ctx->num_of_active     = 0;
 }
 
 void co_thread_cleanup () {
-  co_thread_context_t* threadCtx = co_get_context ();
-  co_free (threadCtx->task_head);
-  co_free (threadCtx);
+  co_thread_context_t* ctx = co_get_context ();
+  co_free (ctx->list_active);
+  co_free (ctx);
   co_tls_set (tls_key_thread_ctx, NULL);
 }
 
 co_task_t* co_task_add (co_func func, void* data, co_uint stackSize) {
-  co_thread_context_t* threadCtx = co_get_context ();
-  register co_task_t*  task      = (co_task_t*)co_calloc (sizeof (co_task_t));
-  register co_task_t*  last      = threadCtx->task_last;
+  co_thread_context_t* ctx  = co_get_context ();
+  register co_task_t*  task = (co_task_t*)co_calloc (sizeof (co_task_t));
+  register co_task_t*  last = ctx->list_active_tail;
 
   stackSize = co_max (stackSize, CO_MINIMAL_STACK_SIZE) & 0xFFFFFFFFFFFFFFF0;
 
   task->prev      = last;
-  task->next      = threadCtx->task_head;
+  task->next      = ctx->list_active;
   task->stack     = co_calloc (stackSize);
   task->ctx.argv0 = (co_uint)data;
   task->ctx.ip    = (co_uint)func;
@@ -68,9 +68,9 @@ co_task_t* co_task_add (co_func func, void* data, co_uint stackSize) {
   *((co_uint*)(task->ctx.sp))      = (co_uint)co_exited_asm;
   last->next->prev                 = task;
   last->next                       = task;
-  threadCtx->task_last             = task;
+  ctx->list_active_tail            = task;
 
-  ++threadCtx->num_of_coroutines;
+  ++ctx->num_of_active;
 
   return task;
 }
@@ -86,16 +86,16 @@ void* co_task_await (co_task_t* task) {
 }
 
 void co_run () {
-  co_thread_context_t* threadCtx = co_get_context ();
+  co_thread_context_t* ctx = co_get_context ();
 
-  while (threadCtx->num_of_coroutines)
+  while (ctx->num_of_active)
     co_yield_ ();
 }
 
 void co_yield_ () {
-  co_thread_context_t* threadCtx = co_get_context ();
+  co_thread_context_t* ctx = co_get_context ();
 
-  register co_task_t* const task = threadCtx->task_current;
+  register co_task_t* const task = ctx->active;
   register co_task_t*       next = task->next;
   register co_uint64        now  = co_timestamp_ms ();
 
@@ -104,15 +104,15 @@ void co_yield_ () {
       co_task_t* t = next;
       next         = next->next;
 
-      if (t == threadCtx->task_last)
-        threadCtx->task_last = t->prev;
+      if (t == ctx->list_active_tail)
+        ctx->list_active_tail = t->prev;
 
       t->prev->next = t->next;
       t->next->prev = t->prev;
       co_free (t->stack);
       co_free (t);
 
-      --threadCtx->num_of_coroutines;
+      --ctx->num_of_active;
       continue;
     } else if ((next->status & CO_TASK_STATUS_WAITING) && now <= next->timeout) {
       next = next->next;
@@ -121,7 +121,7 @@ void co_yield_ () {
     break;
   }
 
-  threadCtx->task_current = next;
+  ctx->active = next;
 
   co_swap_context (&(task->ctx), &(next->ctx));
 }
@@ -145,11 +145,11 @@ void co_cond_cleanup (co_int key) {
 }
 
 void co_cond_wait (co_int key, co_int timeout) {
-  co_thread_context_t* ctx   = co_get_context ();
-  ctx->task_current->timeout = co_timestamp_ms () + timeout;
-  ctx->task_current->status |= CO_TASK_STATUS_WAITING;
+  co_thread_context_t* ctx = co_get_context ();
+  ctx->active->timeout     = co_timestamp_ms () + timeout;
+  ctx->active->status |= CO_TASK_STATUS_WAITING;
   co_yield_ ();
-  ctx->task_current->status &= ~CO_TASK_STATUS_WAITING;
+  ctx->active->status &= ~CO_TASK_STATUS_WAITING;
 }
 
 void co_cond_notify_one (co_int key) {

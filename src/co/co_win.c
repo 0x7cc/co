@@ -10,10 +10,10 @@ typedef struct
 {
   co_func func;
   void*   data;
-} threadCtx;
+} co_thread_create_info_t;
 
 static DWORD WINAPI thread_start_routine (LPVOID lpThreadParameter) {
-  threadCtx* ctx = (threadCtx*)lpThreadParameter;
+  co_thread_create_info_t* ctx = (co_thread_create_info_t*)lpThreadParameter;
 
   co_thread_init ();
 
@@ -29,9 +29,9 @@ static DWORD WINAPI thread_start_routine (LPVOID lpThreadParameter) {
 }
 
 co_int co_thread_create (co_func func, void* data) {
-  threadCtx* ctx = (threadCtx*)co_alloc (sizeof (threadCtx));
-  ctx->func      = func;
-  ctx->data      = data;
+  co_thread_create_info_t* ctx = (co_thread_create_info_t*)co_alloc (sizeof (co_thread_create_info_t));
+  ctx->func                    = func;
+  ctx->data                    = data;
   return (co_int)CreateThread (NULL, NULL, thread_start_routine, ctx, NULL, NULL);
 }
 
