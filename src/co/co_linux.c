@@ -126,8 +126,8 @@ int connect (int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
 ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
-    assert (flags | O_NONBLOCK);
-    assert (flags | O_NDELAY);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
     // fcntl (sockfd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
   }
   register int ret = 0;
@@ -147,8 +147,8 @@ ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
 ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
-    assert (flags | O_NONBLOCK);
-    assert (flags | O_NDELAY);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
     // fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
   }
   register int ret       = 0;
@@ -170,8 +170,8 @@ ssize_t read (int fd, void* buf, size_t count) {
   {
     int flags = fcntl (fd, F_GETFL, 0);
     // fcntl (fd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
-    assert (flags | O_NONBLOCK);
-    assert (flags | O_NDELAY);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
   }
 
   register int ret = 0;
@@ -191,8 +191,8 @@ ssize_t write (int fd, const void* buf, size_t count) {
   {
     int flags = fcntl (fd, F_GETFL, 0);
     // fcntl (fd, F_SETFL, flags | O_NONBLOCK);
-    assert (flags | O_NONBLOCK);
-    assert (flags | O_NDELAY);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
   }
   register int ret       = 0;
   register int sentbytes = 0;

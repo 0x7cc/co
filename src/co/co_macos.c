@@ -20,6 +20,8 @@ typedef struct
   void*   data;
 } co_thread_create_info_t;
 
+typedef int (*sys_accept_t) (int sockfd, struct sockaddr* addr, socklen_t* addrlen);
+typedef int (*sys_connect_t) (int sockfd, const struct sockaddr* addr, socklen_t addrlen);
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
 typedef ssize_t (*sys_send_t) (int sockfd, const void* buf, size_t len, int flags);
 typedef ssize_t (*sys_read_t) (int fd, void* buf, size_t count);
@@ -27,10 +29,12 @@ typedef ssize_t (*sys_write_t) (int fd, const void* buf, size_t count);
 
 struct
 {
-  sys_recv_t  sys_recv;
-  sys_send_t  sys_send;
-  sys_read_t  sys_read;
-  sys_write_t sys_write;
+  sys_accept_t  sys_accept;
+  sys_connect_t sys_connect;
+  sys_recv_t    sys_recv;
+  sys_send_t    sys_send;
+  sys_read_t    sys_read;
+  sys_write_t   sys_write;
 } hooks;
 
 static void* thread_start_routine (void* data) {
@@ -89,10 +93,40 @@ co_uint64 co_timestamp_ms () {
 
 #if CO_ENABLE_HOOKS
 
+int accept (int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
+  int fd = hooks.sys_accept (sockfd, addr, addrlen);
+
+  int flags = fcntl (sockfd, F_GETFL, 0);
+  fcntl (fd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
+
+  return fd;
+}
+
+int connect (int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
+  {
+    int flags = fcntl (sockfd, F_GETFL, 0);
+    fcntl (sockfd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
+  }
+
+  int ret = 0;
+  while (1) {
+    ret = hooks.sys_connect (sockfd, addr, addrlen);
+    if (ret == -1) {
+      if (errno == EINPROGRESS || errno == EALREADY) {
+        co_yield_ ();
+        continue;
+      }
+    }
+    return ret;
+  }
+}
+
 ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
-    fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
+    // fcntl (sockfd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
   }
   register int ret = 0;
   while (1) {
@@ -108,7 +142,9 @@ ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
 ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
-    fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
+    // fcntl (sockfd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
   }
   register int ret       = 0;
   register int sentbytes = 0;
@@ -128,7 +164,9 @@ ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
 ssize_t read (int fd, void* buf, size_t count) {
   {
     int flags = fcntl (fd, F_GETFL, 0);
-    fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
+    // fcntl (sockfd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
   }
 
   register int ret = 0;
@@ -145,7 +183,9 @@ ssize_t read (int fd, void* buf, size_t count) {
 ssize_t write (int fd, const void* buf, size_t count) {
   {
     int flags = fcntl (fd, F_GETFL, 0);
-    fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+    assert (flags & O_NONBLOCK);
+    assert (flags & O_NDELAY);
+    // fcntl (sockfd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
   }
   register int ret       = 0;
   register int sentbytes = 0;
@@ -166,10 +206,12 @@ ssize_t write (int fd, const void* buf, size_t count) {
 
 void co_init_hooks () {
 #if CO_ENABLE_HOOKS
-  hooks.sys_recv  = (sys_recv_t)dlsym (RTLD_NEXT, "recv");
-  hooks.sys_send  = (sys_send_t)dlsym (RTLD_NEXT, "send");
-  hooks.sys_read  = (sys_read_t)dlsym (RTLD_NEXT, "read");
-  hooks.sys_write = (sys_write_t)dlsym (RTLD_NEXT, "write");
+  hooks.sys_accept  = (sys_accept_t)dlsym (RTLD_NEXT, "accept");
+  hooks.sys_connect = (sys_connect_t)dlsym (RTLD_NEXT, "connect");
+  hooks.sys_recv    = (sys_recv_t)dlsym (RTLD_NEXT, "recv");
+  hooks.sys_send    = (sys_send_t)dlsym (RTLD_NEXT, "send");
+  hooks.sys_read    = (sys_read_t)dlsym (RTLD_NEXT, "read");
+  hooks.sys_write   = (sys_write_t)dlsym (RTLD_NEXT, "write");
 #endif
 }
 
