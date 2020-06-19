@@ -23,6 +23,8 @@ typedef struct
   void*   data;
 } threadCtx;
 
+typedef int (*sys_accept_t) (int sockfd, struct sockaddr* addr, socklen_t* addrlen);
+typedef int (*sys_close_t) (int fd);
 typedef int (*sys_connect_t) (int sockfd, const struct sockaddr* addr, socklen_t addrlen);
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
 typedef ssize_t (*sys_send_t) (int sockfd, const void* buf, size_t len, int flags);
@@ -31,6 +33,8 @@ typedef ssize_t (*sys_write_t) (int fd, const void* buf, size_t count);
 
 struct
 {
+  sys_accept_t  sys_accept;
+  sys_close_t   sys_close;
   sys_connect_t sys_connect;
   sys_recv_t    sys_recv;
   sys_send_t    sys_send;
@@ -121,6 +125,15 @@ void co_run () {
 
 #if CO_ENABLE_HOOKS
 
+int accept (int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
+  int fd = hooks.sys_accept (sockfd, addr, addrlen);
+
+  int flags = fcntl (sockfd, F_GETFL, 0);
+  fcntl (fd, F_SETFL, flags | O_NONBLOCK | O_NDELAY);
+
+  return fd;
+}
+
 int connect (int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
   {
     int flags = fcntl (sockfd, F_GETFL, 0);
@@ -138,6 +151,11 @@ int connect (int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
     }
     return ret;
   }
+}
+
+int close (int fd) {
+
+  return hooks.sys_close (fd);
 }
 
 ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
@@ -233,6 +251,8 @@ ssize_t write (int fd, const void* buf, size_t count) {
 
 void co_init_hooks () {
 #if CO_ENABLE_HOOKS
+  hooks.sys_accept  = (sys_accept_t)dlsym (RTLD_NEXT, "accept");
+  hooks.sys_close   = (sys_close_t)dlsym (RTLD_NEXT, "close");
   hooks.sys_connect = (sys_connect_t)dlsym (RTLD_NEXT, "connect");
   hooks.sys_recv    = (sys_recv_t)dlsym (RTLD_NEXT, "recv");
   hooks.sys_send    = (sys_send_t)dlsym (RTLD_NEXT, "send");
