@@ -31,7 +31,6 @@ static void* test (void* data) {
     else {
       puts (ctx->errstr);
     }
-    printf ("%d\n", i);
     freeReplyObject (reply);
   }
   redisFree (ctx);
