@@ -185,4 +185,4 @@ co_swap_context:
 
 co_exited_asm:
   mov argv0, rax     ; 保存协程返回值.
-  jmp qword [rsp + 8]  ; 跳转到c语言函数处理协程结束事件.
+  call qword [rsp + 8]  ; 跳转到c语言函数处理协程结束事件.
