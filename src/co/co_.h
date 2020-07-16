@@ -102,7 +102,12 @@ typedef struct co_thread_context_s {
 extern co_int tls_key_thread_ctx;
 
 static inline co_thread_context_t* co_get_context () {
-  return co_tls_get (tls_key_thread_ctx);
+  co_thread_context_t* ctx = co_tls_get (tls_key_thread_ctx);
+  if (ctx == nullptr) {
+    co_thread_init ();
+    ctx = co_tls_get (tls_key_thread_ctx);
+  }
+  return ctx;
 }
 
 /**

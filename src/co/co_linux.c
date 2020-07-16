@@ -30,6 +30,7 @@ typedef ssize_t (*sys_read_t) (int fd, void* buf, size_t count);
 typedef ssize_t (*sys_recv_t) (int sockfd, void* buf, size_t len, int flags);
 typedef ssize_t (*sys_send_t) (int sockfd, const void* buf, size_t len, int flags);
 typedef ssize_t (*sys_write_t) (int fd, const void* buf, size_t count);
+typedef int (*sys_socket_t) (int domain, int type, int protocol);
 
 struct
 {
@@ -40,6 +41,7 @@ struct
   sys_recv_t    sys_recv;
   sys_send_t    sys_send;
   sys_write_t   sys_write;
+  sys_socket_t  sys_socket;
 } hooks;
 
 static void* thread_start_routine (void* data) {
@@ -141,7 +143,10 @@ int fcntl (int fd, int cmd, ... /* arg */) {
 }
 
 ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
-  assert (fcntl (sockfd, F_GETFL, 0) & O_NONBLOCK);
+  {
+    int flags = hooks.sys_fcntl (sockfd, F_GETFL, 0);
+    hooks.sys_fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
+  }
 
   register int ret = 0;
   while (1) {
@@ -159,8 +164,10 @@ ssize_t recv (int sockfd, void* buf, size_t len, int flags) {
 
 ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
 
-  assert (fcntl (sockfd, F_GETFL, 0) & O_NONBLOCK);
-
+  {
+    int flags = hooks.sys_fcntl (sockfd, F_GETFL, 0);
+    hooks.sys_fcntl (sockfd, F_SETFL, flags | O_NONBLOCK);
+  }
   register int ret       = 0;
   register int sentbytes = 0;
   while (sentbytes != len) {
@@ -178,7 +185,10 @@ ssize_t send (int sockfd, const void* buf, size_t len, int flags) {
 
 ssize_t read (int fd, void* buf, size_t count) {
 
-  assert (fcntl (fd, F_GETFL, 0) & O_NONBLOCK);
+  {
+    int flags = hooks.sys_fcntl (fd, F_GETFL, 0);
+    hooks.sys_fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+  }
 
   register int ret = 0;
   while (1) {
@@ -195,7 +205,10 @@ ssize_t read (int fd, void* buf, size_t count) {
 
 ssize_t write (int fd, const void* buf, size_t count) {
 
-  assert (fcntl (fd, F_GETFL, 0) & O_NONBLOCK);
+  {
+    int flags = hooks.sys_fcntl (fd, F_GETFL, 0);
+    hooks.sys_fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+  }
 
   register int ret       = 0;
   register int sentbytes = 0;
@@ -212,6 +225,14 @@ ssize_t write (int fd, const void* buf, size_t count) {
   return sentbytes;
 }
 
+int socket (int domain, int type, int protocol) {
+  int fd = hooks.sys_socket (domain, type, protocol);
+
+  int flags = hooks.sys_fcntl (fd, F_GETFL, 0);
+  hooks.sys_fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+  return fd;
+}
+
 #endif
 
 void co_init_hooks () {
@@ -223,6 +244,7 @@ void co_init_hooks () {
   hooks.sys_send    = (sys_send_t)dlsym (RTLD_NEXT, "send");
   hooks.sys_read    = (sys_read_t)dlsym (RTLD_NEXT, "read");
   hooks.sys_write   = (sys_write_t)dlsym (RTLD_NEXT, "write");
+  hooks.sys_socket  = (sys_write_t)dlsym (RTLD_NEXT, "socket");
 #endif
 }
 
